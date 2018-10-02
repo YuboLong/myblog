@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.2/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=6.4.2" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.2">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.2" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '6.4.2',
+    sidebar: {"position":"right","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="Kafka源码学习:网络通信层(1)因为工作过程中基本没有涉及到直接使用网络API编程的，所以借这次学习Kafka源码的机会，一起把Java NIO Api以及网络的编程模型套路一起学习一下。 本文主要目的是学习Kafka如何使用NIO与客户端通信的:包括连接的建立，数据的读取，给客户端的应答。 本文涉及的Kafka的源码版本为0.10.2。 文章比较长，不想看细节可以直接看总结  服务器的整体启">
+<meta name="keywords" content="Kafka,Scala,Nio">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka源码学习:网络通信层(1)">
+<meta property="og:url" content="http://blog.longyubo.com/2018/07/01/Kafka_network_1/index.html">
+<meta property="og:site_name" content="LongYuBo&#39;s Blog">
+<meta property="og:description" content="Kafka源码学习:网络通信层(1)因为工作过程中基本没有涉及到直接使用网络API编程的，所以借这次学习Kafka源码的机会，一起把Java NIO Api以及网络的编程模型套路一起学习一下。 本文主要目的是学习Kafka如何使用NIO与客户端通信的:包括连接的建立，数据的读取，给客户端的应答。 本文涉及的Kafka的源码版本为0.10.2。 文章比较长，不想看细节可以直接看总结  服务器的整体启">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2018-10-02T06:15:05.987Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kafka源码学习:网络通信层(1)">
+<meta name="twitter:description" content="Kafka源码学习:网络通信层(1)因为工作过程中基本没有涉及到直接使用网络API编程的，所以借这次学习Kafka源码的机会，一起把Java NIO Api以及网络的编程模型套路一起学习一下。 本文主要目的是学习Kafka如何使用NIO与客户端通信的:包括连接的建立，数据的读取，给客户端的应答。 本文涉及的Kafka的源码版本为0.10.2。 文章比较长，不想看细节可以直接看总结  服务器的整体启">
+
+
+
+
+
+
+  <link rel="canonical" href="http://blog.longyubo.com/2018/07/01/Kafka_network_1/"/>
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Kafka源码学习:网络通信层(1) | LongYuBo's Blog</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">LongYuBo's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">Things about programming</p>
+      
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br />首页</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+    <a href="/about/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-user"></i> <br />关于</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+    <a href="/tags/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />标签</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />归档</a>
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.longyubo.com/2018/07/01/Kafka_network_1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kafka源码学习:网络通信层(1)
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2018-07-01 16:23:06" itemprop="dateCreated datePublished" datetime="2018-07-01T16:23:06+08:00">2018-07-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2018-10-02 14:15:05" itemprop="dateModified" datetime="2018-10-02T14:15:05+08:00">2018-10-02</time>
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/07/01/Kafka_network_1/#comments" itemprop="discussionUrl">
+                
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/07/01/Kafka_network_1/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Kafka源码学习-网络通信层-1"><a href="#Kafka源码学习-网络通信层-1" class="headerlink" title="Kafka源码学习:网络通信层(1)"></a>Kafka源码学习:网络通信层(1)</h2><p>因为工作过程中基本没有涉及到直接使用网络API编程的，所以借这次学习Kafka源码的机会，一起把Java NIO Api以及网络的编程模型套路一起学习一下。</p>
+<p>本文主要目的是学习Kafka如何使用NIO与客户端通信的:包括连接的建立，数据的读取，给客户端的应答。</p>
+<p>本文涉及的Kafka的源码版本为0.10.2。</p>
+<p>文章比较长，不想看细节可以直接看<a href="#kafka_network_1_conclution">总结</a> </p>
+<h3 id="服务器的整体启动流程"><a href="#服务器的整体启动流程" class="headerlink" title="服务器的整体启动流程"></a>服务器的整体启动流程</h3><p>服务器是在KafkaServer类的startUp方法中的ServerSocket.startUp方法拉起来。下面看下这个ServerSocket.startUp具体是怎么做的。</p>
+<p>startUp根据配置信息中的每个Endpoint（Ip+Port）拉起一个Acceptor，然后这个Acceptor再拉起对应num.network.threads数目的Processor（这里的Acceptor和Processor都是runnable，都是拉起单独的线程跑的）</p>
+<p>Acceptor的作用是接受请求，它在ServerChannel上注册了一个Selector，这个Selector注册了SelectionKey.OP_ACCEPT事件用来接受请求。如果有Accept进来，就使用RoundRobin的方式决定一个Processor，然后拿到客户端的Channel，配置好非阻塞模式，放入选出的Processor的newConnections队列里面。</p>
+<p>Acceptor启动的时候会拉起num.network.threads数目的Processor。</p>
+<p> 这一块的代码如下</p>
+ <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br></pre></td><td class="code"><pre><span class="line">     <span class="comment">//初始化Acceptor与Processor</span></span><br><span class="line">     <span class="keyword">var</span> processorBeginIndex = <span class="number">0</span></span><br><span class="line">     config.listeners.foreach &#123; endpoint =&gt;</span><br><span class="line">     <span class="keyword">val</span> listenerName = endpoint.listenerName</span><br><span class="line">     <span class="keyword">val</span> securityProtocol = endpoint.securityProtocol</span><br><span class="line">     <span class="keyword">val</span> processorEndIndex = processorBeginIndex + numProcessorThreads</span><br><span class="line"></span><br><span class="line">     <span class="keyword">for</span> (i &lt;- processorBeginIndex until processorEndIndex)</span><br><span class="line">       processors(i) = newProcessor(i, connectionQuotas, listenerName, securityProtocol)</span><br><span class="line"></span><br><span class="line">     <span class="keyword">val</span> acceptor = <span class="keyword">new</span> <span class="type">Acceptor</span>(endpoint, sendBufferSize, recvBufferSize, brokerId,</span><br><span class="line">       processors.slice(processorBeginIndex, processorEndIndex), connectionQuotas)</span><br><span class="line">     acceptors.put(endpoint, acceptor)</span><br><span class="line">     <span class="type">Utils</span>.newThread(<span class="string">s"kafka-socket-acceptor-<span class="subst">$listenerName</span>-<span class="subst">$securityProtocol</span>-<span class="subst">$&#123;endpoint.port&#125;</span>"</span>, acceptor, <span class="literal">false</span>).start()</span><br><span class="line">     acceptor.awaitStartup()</span><br><span class="line"></span><br><span class="line">     processorBeginIndex = processorEndIndex</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">     <span class="comment">//Acceptor拉起Processor</span></span><br><span class="line">     <span class="keyword">private</span>[kafka] <span class="class"><span class="keyword">class</span> <span class="title">Acceptor</span>(<span class="params">val endPoint: <span class="type">EndPoint</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                           val sendBufferSize: <span class="type">Int</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                           val recvBufferSize: <span class="type">Int</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                           brokerId: <span class="type">Int</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                           processors: <span class="type">Array</span>[<span class="type">Processor</span>],</span></span></span><br><span class="line"><span class="class"><span class="params">                           connectionQuotas: <span class="type">ConnectionQuotas</span></span>) <span class="keyword">extends</span> <span class="title">AbstractServerThread</span>(<span class="params">connectionQuotas</span>) <span class="keyword">with</span> <span class="title">KafkaMetricsGroup</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span> <span class="keyword">val</span> nioSelector = <span class="type">NSelector</span>.open()</span><br><span class="line"> <span class="keyword">val</span> serverChannel = openServerSocket(endPoint.host, endPoint.port)</span><br><span class="line"></span><br><span class="line"> <span class="keyword">this</span>.synchronized &#123;</span><br><span class="line"> <span class="comment">//拉起Processor</span></span><br><span class="line"> processors.foreach &#123; processor =&gt;</span><br><span class="line">   <span class="type">Utils</span>.newThread(<span class="string">s"kafka-network-thread-<span class="subst">$brokerId</span>-<span class="subst">$&#123;endPoint.listenerName&#125;</span>-<span class="subst">$&#123;endPoint.securityProtocol&#125;</span>-<span class="subst">$&#123;processor.id&#125;</span>"</span>,</span><br><span class="line">     processor, <span class="literal">false</span>).start()</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"> <span class="comment">//Acceptor 的主逻辑</span></span><br><span class="line">   <span class="keyword">var</span> currentProcessor = <span class="number">0</span></span><br><span class="line">   <span class="keyword">while</span> (isRunning) &#123;</span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">       <span class="keyword">val</span> ready = nioSelector.select(<span class="number">500</span>)</span><br><span class="line">       <span class="keyword">if</span> (ready &gt; <span class="number">0</span>) &#123;</span><br><span class="line">         <span class="keyword">val</span> keys = nioSelector.selectedKeys()</span><br><span class="line">         <span class="keyword">val</span> iter = keys.iterator()</span><br><span class="line">         <span class="keyword">while</span> (iter.hasNext &amp;&amp; isRunning) &#123;</span><br><span class="line">           <span class="keyword">try</span> &#123;</span><br><span class="line">             <span class="keyword">val</span> key = iter.next</span><br><span class="line">             iter.remove()</span><br><span class="line">             <span class="keyword">if</span> (key.isAcceptable)</span><br><span class="line">               accept(key, processors(currentProcessor))</span><br><span class="line">             <span class="keyword">else</span></span><br><span class="line">               <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">IllegalStateException</span>(<span class="string">"Unrecognized key state for acceptor thread."</span>)</span><br><span class="line"></span><br><span class="line">             <span class="comment">// round robin to the next processor thread</span></span><br><span class="line">             currentProcessor = (currentProcessor + <span class="number">1</span>) % processors.length</span><br><span class="line">           &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">             <span class="keyword">case</span> e: <span class="type">Throwable</span> =&gt; error(<span class="string">"Error while accepting connection"</span>, e)</span><br><span class="line">           &#125;</span><br><span class="line">         &#125;</span><br><span class="line">       &#125;</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="keyword">catch</span> &#123;</span><br><span class="line">       <span class="comment">// We catch all the throwables to prevent the acceptor thread from exiting on exceptions due</span></span><br><span class="line">       <span class="comment">// to a select operation on a specific channel or a bad request. We don't want</span></span><br><span class="line">       <span class="comment">// the broker to stop responding to requests from other clients in these scenarios.</span></span><br><span class="line">       <span class="keyword">case</span> e: <span class="type">ControlThrowable</span> =&gt; <span class="keyword">throw</span> e</span><br><span class="line">       <span class="keyword">case</span> e: <span class="type">Throwable</span> =&gt; error(<span class="string">"Error occurred"</span>, e)</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">   <span class="comment">//Accept方法具体实现</span></span><br><span class="line">   <span class="function"><span class="keyword">def</span> <span class="title">accept</span></span>(key: <span class="type">SelectionKey</span>, processor: <span class="type">Processor</span>) &#123;</span><br><span class="line">     <span class="keyword">val</span> serverSocketChannel = key.channel().asInstanceOf[<span class="type">ServerSocketChannel</span>]</span><br><span class="line">     <span class="keyword">val</span> socketChannel = serverSocketChannel.accept() <span class="comment">//这个socketChannel就是客户端的channel了</span></span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">     connectionQuotas.inc(socketChannel.socket().getInetAddress)</span><br><span class="line">     socketChannel.configureBlocking(<span class="literal">false</span>)</span><br><span class="line">     socketChannel.socket().setTcpNoDelay(<span class="literal">true</span>)</span><br><span class="line">     socketChannel.socket().setKeepAlive(<span class="literal">true</span>)</span><br><span class="line">     <span class="keyword">if</span> (sendBufferSize != <span class="type">Selectable</span>.<span class="type">USE_DEFAULT_BUFFER_SIZE</span>)</span><br><span class="line">         socketChannel.socket().setSendBufferSize(sendBufferSize)</span><br><span class="line"></span><br><span class="line">     debug(<span class="string">"Accepted connection from %s on %s and assigned it to processor %d, sendBufferSize [actual|requested]: [%d|%d] recvBufferSize [actual|requested]: [%d|%d]"</span></span><br><span class="line">             .format(socketChannel.socket.getRemoteSocketAddress, socketChannel.socket.getLocalSocketAddress, processor.id,</span><br><span class="line">                 socketChannel.socket.getSendBufferSize, sendBufferSize,</span><br><span class="line">                 socketChannel.socket.getReceiveBufferSize, recvBufferSize))</span><br><span class="line"></span><br><span class="line">     processor.accept(socketChannel)</span><br><span class="line">     &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">     <span class="keyword">case</span> e: <span class="type">TooManyConnectionsException</span> =&gt;</span><br><span class="line">         info(<span class="string">"Rejected connection from %s, address already has the configured maximum of %d connections."</span>.format(e.ip, e.count))</span><br><span class="line">         close(socketChannel)</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="comment">//processor.accept具体实现，其实是放入了newConnections队列里面</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">accept</span></span>(socketChannel: <span class="type">SocketChannel</span>) &#123;</span><br><span class="line">     newConnections.add(socketChannel)</span><br><span class="line">     wakeup()</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<p>Processor的作用主要是处理新建的连接，读取客户端的请求，响应客户端，处理客户端关闭。<br>下面主要来说下Processor的构成还有是如何处理这些动作的。</p>
+<h3 id="Processor结构"><a href="#Processor结构" class="headerlink" title="Processor结构"></a>Processor结构</h3><p>Processor里面组成部分先介绍3个：一个Selector(这个selector是kafka包装过nioSelector的,里面定义了已收到和已发出的队列等等)，一个上文提到的newConnections队列和一个RequestChannel。<br>这个RequestChannel是一个类，重要的结构有两个，一个RequestQueue ，一个ResponseQueues看名字就知道是用来存储请求和响应的。具体代码如下：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">RequestChannel</span>(<span class="params">val numProcessors: <span class="type">Int</span>, val queueSize: <span class="type">Int</span></span>) <span class="keyword">extends</span> <span class="title">KafkaMetricsGroup</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">var</span> responseListeners: <span class="type">List</span>[(<span class="type">Int</span>) =&gt; <span class="type">Unit</span>] = <span class="type">Nil</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">val</span> requestQueue = <span class="keyword">new</span> <span class="type">ArrayBlockingQueue</span>[<span class="type">RequestChannel</span>.<span class="type">Request</span>](queueSize)</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">val</span> responseQueues = <span class="keyword">new</span> <span class="type">Array</span>[<span class="type">BlockingQueue</span>[<span class="type">RequestChannel</span>.<span class="type">Response</span>]](numProcessors)</span><br><span class="line">  <span class="keyword">for</span>(i &lt;- <span class="number">0</span> until numProcessors)</span><br><span class="line">    responseQueues(i) = <span class="keyword">new</span> <span class="type">LinkedBlockingQueue</span>[<span class="type">RequestChannel</span>.<span class="type">Response</span>]()</span><br></pre></td></tr></table></figure>
+<p>上文说过Processor是个Runnable，那么直接看它的run方法</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>() &#123;</span><br><span class="line">  startupComplete()</span><br><span class="line">  <span class="keyword">while</span> (isRunning) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// setup any new connections that have been queued up</span></span><br><span class="line">      configureNewConnections()</span><br><span class="line">      <span class="comment">// register any new responses for writing</span></span><br><span class="line">      <span class="comment">// 这个Response只是把response写到了transportLayer，并没有实际发送，实际发送是在下面的poll做的</span></span><br><span class="line">      processNewResponses()</span><br><span class="line">      poll()</span><br><span class="line">      processCompletedReceives()</span><br><span class="line">      processCompletedSends()</span><br><span class="line">      processDisconnected()</span><br><span class="line">    &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="comment">// We catch all the throwables here to prevent the processor thread from exiting. We do this because</span></span><br><span class="line">      <span class="comment">// letting a processor exit might cause a bigger impact on the broker. Usually the exceptions thrown would</span></span><br><span class="line">      <span class="comment">// be either associated with a specific socket channel or a bad request. We just ignore the bad socket channel</span></span><br><span class="line">      <span class="comment">// or request. This behavior might need to be reviewed if we see an exception that need the entire broker to stop.</span></span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">ControlThrowable</span> =&gt; <span class="keyword">throw</span> e</span><br><span class="line">      <span class="keyword">case</span> e: <span class="type">Throwable</span> =&gt;</span><br><span class="line">        error(<span class="string">"Processor got uncaught exception."</span>, e)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  debug(<span class="string">"Closing selector - processor "</span> + id)</span><br><span class="line">  swallowError(closeAll())</span><br><span class="line">  shutdownComplete()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>try里面的代码说明了processor做的事情，下面逐一说明</p>
+<h3 id="配置新进连接-ConfigureNewConnections"><a href="#配置新进连接-ConfigureNewConnections" class="headerlink" title="配置新进连接 ConfigureNewConnections"></a>配置新进连接 ConfigureNewConnections</h3><p>配置新连接主要做了一件事情就是把Acceptor放到newConnection队列里面的客户端的channel拿出来，然后把channel注册上Selector和对应的SelectionKey.OP_READ，这样在select的时候就能拿到客户端发出的请求了，然后把channel进行包装成KafkaChannel并attach到原始channel上。根据channel的基本信息构建一个key，放入Selector维护的ChannelMap里面。具体代码如下:</p>
+<p>这里说下KafkaChannel这个类，这个类里面有个TransportLayer和一个Send属性。TransportLayerk可以由一个SelectionKey构建出来，他主要负责底层对channel的read,write,close等操作（因为之前把channel attach到SelectionKey上了所以可以拿到channel）。send属性是用来维护要发送的应答的。Kafka实际是一个request-response模型，一个channel同一时间只有一个请求，不会有多个，所以send只有一个。<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//配置新连接</span></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">configureNewConnections</span></span>() &#123;</span><br><span class="line">    <span class="keyword">while</span> (!newConnections.isEmpty) &#123;</span><br><span class="line">      <span class="keyword">val</span> channel = newConnections.poll()</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        debug(<span class="string">s"Processor <span class="subst">$id</span> listening to new connection from <span class="subst">$&#123;channel.socket.getRemoteSocketAddress&#125;</span>"</span>)</span><br><span class="line">        <span class="keyword">val</span> localHost = channel.socket().getLocalAddress.getHostAddress</span><br><span class="line">        <span class="keyword">val</span> localPort = channel.socket().getLocalPort</span><br><span class="line">        <span class="keyword">val</span> remoteHost = channel.socket().getInetAddress.getHostAddress</span><br><span class="line">        <span class="keyword">val</span> remotePort = channel.socket().getPort</span><br><span class="line">        <span class="keyword">val</span> connectionId = <span class="type">ConnectionId</span>(localHost, localPort, remoteHost, remotePort).toString</span><br><span class="line">        selector.register(connectionId, channel)</span><br><span class="line">      &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="comment">// We explicitly catch all non fatal exceptions and close the socket to avoid a socket leak. The other</span></span><br><span class="line">        <span class="comment">// throwables will be caught in processor and logged as uncaught exceptions.</span></span><br><span class="line">        <span class="keyword">case</span> <span class="type">NonFatal</span>(e) =&gt;</span><br><span class="line">          <span class="keyword">val</span> remoteAddress = channel.getRemoteAddress</span><br><span class="line">          <span class="comment">// need to close the channel here to avoid a socket leak.</span></span><br><span class="line">          close(channel)</span><br><span class="line">          error(<span class="string">s"Processor <span class="subst">$id</span> closed connection from <span class="subst">$remoteAddress</span>"</span>, e)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">   public void register(<span class="type">String</span> id, <span class="type">SocketChannel</span> socketChannel) <span class="keyword">throws</span> <span class="type">ClosedChannelException</span> &#123;</span><br><span class="line">        <span class="type">SelectionKey</span> key = socketChannel.register(nioSelector, <span class="type">SelectionKey</span>.<span class="type">OP_READ</span>);</span><br><span class="line">        <span class="type">KafkaChannel</span> channel = channelBuilder.buildChannel(id, key, maxReceiveSize);</span><br><span class="line">        key.attach(channel);</span><br><span class="line">        <span class="keyword">this</span>.channels.put(id, channel);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="处理响应-ProcessNewResponses"><a href="#处理响应-ProcessNewResponses" class="headerlink" title="处理响应 ProcessNewResponses"></a>处理响应 ProcessNewResponses</h3><p>根据当前到Processor的序号（上文提到了Processor是多个）从RequestChannel里面拿到属于自己的响应队列，然后拿出响应并根据responseAction做出响应。这里的responseAction有3种：</p>
+<ol>
+<li>NoOpAction 啥也不做，只把SelectionKey.OP_READ重新注册到selector上</li>
+<li>SendAction 根据response里面的destination（就是channelId）拿到对应的KafkaChannel对象，把要发送的Send对象放到KafkaChannel对应的Send字段上，然后把写操作打开( this.transportLayer.addInterestOps(SelectionKey.OP_WRITE))，注意并没有实际发送.然后在inflightResponses记录下这个响应</li>
+<li>CloseConnectionAction 把对应channel给close掉。</li>
+</ol>
+<p>SendAction有关代码<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//processor.sendResponse</span></span><br><span class="line">  <span class="keyword">protected</span>[network] <span class="function">def <span class="title">sendResponse</span><span class="params">(response: RequestChannel.Response)</span> </span>&#123;</span><br><span class="line">    trace(s<span class="string">"Socket server received response to send, registering for write and sending data: $response"</span>)</span><br><span class="line">    val channel = selector.channel(response.responseSend.destination)</span><br><span class="line">    <span class="comment">// `channel` can be null if the selector closed the connection because it was idle for too long</span></span><br><span class="line">    <span class="keyword">if</span> (channel == <span class="keyword">null</span>) &#123;</span><br><span class="line">      warn(s<span class="string">"Attempting to send response via channel for which there is no open connection, connection id $id"</span>)</span><br><span class="line">      response.request.updateRequestMetrics()</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      selector.send(response.responseSend)</span><br><span class="line">      inflightResponses += (response.request.connectionId -&gt; response)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//selector.send</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">send</span><span class="params">(Send send)</span> </span>&#123;</span><br><span class="line">        String connectionId = send.destination();</span><br><span class="line">        <span class="keyword">if</span> (closingChannels.containsKey(connectionId))</span><br><span class="line">            <span class="keyword">this</span>.failedSends.add(connectionId);</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            KafkaChannel channel = channelOrFail(connectionId, <span class="keyword">false</span>);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                channel.setSend(send);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (CancelledKeyException e) &#123;</span><br><span class="line">                <span class="keyword">this</span>.failedSends.add(connectionId);</span><br><span class="line">                close(channel, <span class="keyword">false</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setSend</span><span class="params">(Send send)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.send != <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Attempt to begin a send operation with prior send operation still in progress."</span>);</span><br><span class="line">        <span class="keyword">this</span>.send = send;</span><br><span class="line">        <span class="keyword">this</span>.transportLayer.addInterestOps(SelectionKey.OP_WRITE);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里明显能看出对于一个Channel上，send只能有一个</p>
+<h3 id="真正的读写-poll"><a href="#真正的读写-poll" class="headerlink" title="真正的读写 poll"></a>真正的读写 poll</h3><p>poll方法通过对selector进行select来确定readyKeys的数量，如果大于0，就pollSelectionKeys，具体看下poll和pollSelectionKeys这个方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//processor.poll</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> def <span class="title">poll</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> selector.poll(<span class="number">300</span>)</span><br><span class="line">    <span class="keyword">catch</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> e @ (_: IllegalStateException | _: IOException) =&gt;</span><br><span class="line">        error(s<span class="string">"Closing processor $id due to illegal state or IO exception"</span>)</span><br><span class="line">        swallow(closeAll())</span><br><span class="line">        shutdownComplete()</span><br><span class="line">        <span class="keyword">throw</span> e</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"><span class="comment">//selector.poll</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">poll</span><span class="params">(<span class="keyword">long</span> timeout)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (timeout &lt; <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"timeout should be &gt;= 0"</span>);</span><br><span class="line"></span><br><span class="line">        clear();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (hasStagedReceives() || !immediatelyConnectedKeys.isEmpty())</span><br><span class="line">            timeout = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* check ready keys */</span></span><br><span class="line">        <span class="keyword">long</span> startSelect = time.nanoseconds();</span><br><span class="line">        <span class="keyword">int</span> readyKeys = select(timeout);</span><br><span class="line">        <span class="keyword">long</span> endSelect = time.nanoseconds();</span><br><span class="line">        <span class="keyword">this</span>.sensors.selectTime.record(endSelect - startSelect, time.milliseconds());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (readyKeys &gt; <span class="number">0</span> || !immediatelyConnectedKeys.isEmpty()) &#123;</span><br><span class="line">            pollSelectionKeys(<span class="keyword">this</span>.nioSelector.selectedKeys(), <span class="keyword">false</span>, endSelect);</span><br><span class="line">            pollSelectionKeys(immediatelyConnectedKeys, <span class="keyword">true</span>, endSelect);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        addToCompletedReceives();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> endIo = time.nanoseconds();</span><br><span class="line">        <span class="keyword">this</span>.sensors.ioTime.record(endIo - endSelect, time.milliseconds());</span><br><span class="line"></span><br><span class="line">        <span class="comment">// we use the time at the end of select to ensure that we don't close any connections that</span></span><br><span class="line">        <span class="comment">// have just been processed in pollSelectionKeys</span></span><br><span class="line">        maybeCloseOldestConnection(endSelect);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">pollSelectionKeys</span><span class="params">(Iterable&lt;SelectionKey&gt; selectionKeys,</span></span></span><br><span class="line"><span class="function"><span class="params">                                   <span class="keyword">boolean</span> isImmediatelyConnected,</span></span></span><br><span class="line"><span class="function"><span class="params">                                   <span class="keyword">long</span> currentTimeNanos)</span> </span>&#123;</span><br><span class="line">        Iterator&lt;SelectionKey&gt; iterator = selectionKeys.iterator();</span><br><span class="line">        <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">            SelectionKey key = iterator.next();</span><br><span class="line">            iterator.remove();</span><br><span class="line">            KafkaChannel channel = channel(key);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// register all per-connection metrics at once</span></span><br><span class="line">            sensors.maybeRegisterConnectionMetrics(channel.id());</span><br><span class="line">            <span class="keyword">if</span> (idleExpiryManager != <span class="keyword">null</span>)</span><br><span class="line">                idleExpiryManager.update(channel.id(), currentTimeNanos);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">                <span class="comment">/* complete any connections that have finished their handshake (either normally or immediately) */</span></span><br><span class="line">            	<span class="comment">//似乎是客户端连接服务器的逻辑</span></span><br><span class="line">                <span class="keyword">if</span> (isImmediatelyConnected || key.isConnectable()) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (channel.finishConnect()) &#123;</span><br><span class="line">                        <span class="keyword">this</span>.connected.add(channel.id());</span><br><span class="line">                        <span class="keyword">this</span>.sensors.connectionCreated.record();</span><br><span class="line">                        SocketChannel socketChannel = (SocketChannel) key.channel();</span><br><span class="line">                        log.debug(<span class="string">"Created socket with SO_RCVBUF = &#123;&#125;, SO_SNDBUF = &#123;&#125;, SO_TIMEOUT = &#123;&#125; to node &#123;&#125;"</span>,</span><br><span class="line">                                socketChannel.socket().getReceiveBufferSize(),</span><br><span class="line">                                socketChannel.socket().getSendBufferSize(),</span><br><span class="line">                                socketChannel.socket().getSoTimeout(),</span><br><span class="line">                                channel.id());</span><br><span class="line">                    &#125; <span class="keyword">else</span></span><br><span class="line">                        <span class="keyword">continue</span>;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">/* if channel is not ready finish prepare */</span></span><br><span class="line">                <span class="keyword">if</span> (channel.isConnected() &amp;&amp; !channel.ready())</span><br><span class="line">                    channel.prepare();</span><br><span class="line"></span><br><span class="line">                <span class="comment">/* if channel is ready read from any connections that have readable data */</span></span><br><span class="line">                <span class="comment">//从底层channel读，按照包来读</span></span><br><span class="line">                <span class="keyword">if</span> (channel.ready() &amp;&amp; key.isReadable() &amp;&amp; !hasStagedReceive(channel)) &#123;</span><br><span class="line">                    NetworkReceive networkReceive;</span><br><span class="line">                    <span class="keyword">while</span> ((networkReceive = channel.read()) != <span class="keyword">null</span>)</span><br><span class="line">                        addToStagedReceives(channel, networkReceive);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">/* if channel is ready write to any sockets that have space in their buffer and for which we have data */</span></span><br><span class="line">                <span class="keyword">if</span> (channel.ready() &amp;&amp; key.isWritable()) &#123;</span><br><span class="line">                    Send send = channel.write();</span><br><span class="line">                    <span class="keyword">if</span> (send != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="keyword">this</span>.completedSends.add(send);</span><br><span class="line">                        <span class="keyword">this</span>.sensors.recordBytesSent(channel.id(), send.size());</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">/* cancel any defunct sockets */</span></span><br><span class="line">                <span class="keyword">if</span> (!key.isValid())</span><br><span class="line">                    close(channel, <span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                String desc = channel.socketDescription();</span><br><span class="line">                <span class="keyword">if</span> (e <span class="keyword">instanceof</span> IOException)</span><br><span class="line">                    log.debug(<span class="string">"Connection with &#123;&#125; disconnected"</span>, desc, e);</span><br><span class="line">                <span class="keyword">else</span></span><br><span class="line">                    log.warn(<span class="string">"Unexpected error from &#123;&#125;; closing connection"</span>, desc, e);</span><br><span class="line">                close(channel, <span class="keyword">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>这里主要看后面的两个逻辑读和写，前面的似乎是客户端的逻辑，因为这个类是公用的，目前还不确定.<br>先看读逻辑<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">channel.ready() &amp;&amp; key.isReadable() &amp;&amp; !hasStagedReceive(channel)</span><br><span class="line">NetworkReceive networkReceive;</span><br><span class="line">                   <span class="keyword">while</span> ((networkReceive = channel.read()) != <span class="keyword">null</span>)</span><br><span class="line">                       addToStagedReceives(channel, networkReceive);</span><br><span class="line">   <span class="comment">//addToStagedReceives方法</span></span><br><span class="line">   <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">addToStagedReceives</span><span class="params">(KafkaChannel channel, NetworkReceive receive)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (!stagedReceives.containsKey(channel))</span><br><span class="line">           stagedReceives.put(channel, <span class="keyword">new</span> ArrayDeque&lt;NetworkReceive&gt;());</span><br><span class="line"></span><br><span class="line">       Deque&lt;NetworkReceive&gt; deque = stagedReceives.get(channel);</span><br><span class="line">       deque.add(receive);</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure></p>
+<p>可以看到如果channel已经就绪，同时可读，也没有未处理的请求，就把数据读出来，放到stagedReceives这个队列里面去.看到这个while似乎请求包可以有多个，但是前面我们已经看到了，应答包只能有1个，这个有点奇怪了。这里有一篇2015年1月的<a href="http://blog.csdn.net/jewes/article/details/42403721" target="_blank" rel="noopener">文章</a>也是分析kafka网络层的，那个时候对于channel，read还只能read一个包.这里需要对照客户端的代码一起看，看一下是不是客户端也用了send这个结构，只能send一个。</p>
+<p>channel.read方法读取数据是标准的按包读，先读4个字节来确定包长度，然后开对应大小的buffer把剩下的读进来。<br>具体的代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> NetworkReceive <span class="title">read</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">       NetworkReceive result = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">if</span> (receive == <span class="keyword">null</span>) &#123;</span><br><span class="line">           receive = <span class="keyword">new</span> NetworkReceive(maxReceiveSize, id);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       receive(receive);</span><br><span class="line">       <span class="keyword">if</span> (receive.complete()) &#123;</span><br><span class="line">           receive.payload().rewind();</span><br><span class="line">           result = receive;</span><br><span class="line">           receive = <span class="keyword">null</span>;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> result;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="function"><span class="keyword">private</span> <span class="keyword">long</span> <span class="title">receive</span><span class="params">(NetworkReceive receive)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">       <span class="keyword">return</span> receive.readFrom(transportLayer);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">readFrom</span><span class="params">(ScatteringByteChannel channel)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">       <span class="keyword">return</span> readFromReadableChannel(channel);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="comment">// Need a method to read from ReadableByteChannel because BlockingChannel requires read with timeout</span></span><br><span class="line">   <span class="comment">// See: http://stackoverflow.com/questions/2866557/timeout-for-socketchannel-doesnt-work</span></span><br><span class="line">   <span class="comment">// This can go away after we get rid of BlockingChannel</span></span><br><span class="line">   <span class="meta">@Deprecated</span></span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">readFromReadableChannel</span><span class="params">(ReadableByteChannel channel)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">       <span class="keyword">int</span> read = <span class="number">0</span>;</span><br><span class="line">       <span class="keyword">if</span> (size.hasRemaining()) &#123;</span><br><span class="line">           <span class="keyword">int</span> bytesRead = channel.read(size); <span class="comment">//这个size是一个长度为4的bytebuffer</span></span><br><span class="line">           <span class="keyword">if</span> (bytesRead &lt; <span class="number">0</span>)</span><br><span class="line">               <span class="keyword">throw</span> <span class="keyword">new</span> EOFException();</span><br><span class="line">           read += bytesRead;</span><br><span class="line">           <span class="keyword">if</span> (!size.hasRemaining()) &#123;</span><br><span class="line">               size.rewind();</span><br><span class="line">               <span class="keyword">int</span> receiveSize = size.getInt();</span><br><span class="line">               <span class="keyword">if</span> (receiveSize &lt; <span class="number">0</span>)</span><br><span class="line">                   <span class="keyword">throw</span> <span class="keyword">new</span> InvalidReceiveException(<span class="string">"Invalid receive (size = "</span> + receiveSize + <span class="string">")"</span>);</span><br><span class="line">               <span class="keyword">if</span> (maxSize != UNLIMITED &amp;&amp; receiveSize &gt; maxSize)</span><br><span class="line">                   <span class="keyword">throw</span> <span class="keyword">new</span> InvalidReceiveException(<span class="string">"Invalid receive (size = "</span> + receiveSize + <span class="string">" larger than "</span> + maxSize + <span class="string">")"</span>);</span><br><span class="line"></span><br><span class="line">               <span class="keyword">this</span>.buffer = ByteBuffer.allocate(receiveSize);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span> (buffer != <span class="keyword">null</span>) &#123;</span><br><span class="line">           <span class="keyword">int</span> bytesRead = channel.read(buffer);</span><br><span class="line">           <span class="keyword">if</span> (bytesRead &lt; <span class="number">0</span>)</span><br><span class="line">               <span class="keyword">throw</span> <span class="keyword">new</span> EOFException();</span><br><span class="line">           read += bytesRead;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">return</span> read;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">complete</span><span class="params">()</span> </span>&#123;</span><br><span class="line">       <span class="keyword">return</span> !size.hasRemaining() &amp;&amp; !buffer.hasRemaining();</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里可以看到如果网络层数据不完整，就是size或者buffer有remaining的时候，就返回了一个空的result，等下一次poll的时候再来。</p>
+<p>下面的写方法就是直接把channel上持有的send发出去，然后放入completedSends队列里面。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">//in selector poll</span></span><br><span class="line"> <span class="keyword">if</span> (channel.ready() &amp;&amp; key.isWritable()) &#123;</span><br><span class="line">                    Send send = channel.write();</span><br><span class="line">                    <span class="keyword">if</span> (send != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="keyword">this</span>.completedSends.add(send);</span><br><span class="line">                        <span class="keyword">this</span>.sensors.recordBytesSent(channel.id(), send.size());</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"> <span class="comment">//channel.write</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> Send <span class="title">write</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        Send result = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">if</span> (send != <span class="keyword">null</span> &amp;&amp; send(send)) &#123;</span><br><span class="line">            result = send;</span><br><span class="line">            send = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">   </span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">send</span><span class="params">(Send send)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        send.writeTo(transportLayer);</span><br><span class="line">        <span class="keyword">if</span> (send.completed())</span><br><span class="line">            transportLayer.removeInterestOps(SelectionKey.OP_WRITE);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> send.completed();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>返回到poll方法，在pollSelectionKeys之后会通过 addToCompletedReceives方法把stagedReceive放到CompletedReceives里面去。注意这两个结构都是kafka自己包装的Selector类里面的属性（这个类里面有个nio的Selector）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">addToCompletedReceives</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">this</span>.stagedReceives.isEmpty()) &#123;</span><br><span class="line">        Iterator&lt;Map.Entry&lt;KafkaChannel, Deque&lt;NetworkReceive&gt;&gt;&gt; iter = <span class="keyword">this</span>.stagedReceives.entrySet().iterator();</span><br><span class="line">        <span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">            Map.Entry&lt;KafkaChannel, Deque&lt;NetworkReceive&gt;&gt; entry = iter.next();</span><br><span class="line">            KafkaChannel channel = entry.getKey();</span><br><span class="line">            <span class="keyword">if</span> (!channel.isMute()) &#123;</span><br><span class="line">                Deque&lt;NetworkReceive&gt; deque = entry.getValue();</span><br><span class="line">                addToCompletedReceives(channel, deque);</span><br><span class="line">                <span class="keyword">if</span> (deque.isEmpty())</span><br><span class="line">                    iter.remove();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">addToCompletedReceives</span><span class="params">(KafkaChannel channel, Deque&lt;NetworkReceive&gt; stagedDeque)</span> </span>&#123;</span><br><span class="line">    NetworkReceive networkReceive = stagedDeque.poll();</span><br><span class="line">    <span class="keyword">this</span>.completedReceives.add(networkReceive);</span><br><span class="line">    <span class="keyword">this</span>.sensors.recordBytesReceived(channel.id(), networkReceive.payload().limit());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="处理收到的结果-processCompletedReceives"><a href="#处理收到的结果-processCompletedReceives" class="headerlink" title="处理收到的结果 processCompletedReceives"></a>处理收到的结果 processCompletedReceives</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//processor.processCompletedReceives</span></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">processCompletedReceives</span></span>() &#123;</span><br><span class="line">    selector.completedReceives.asScala.foreach &#123; receive =&gt;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">val</span> openChannel = selector.channel(receive.source)</span><br><span class="line">        <span class="keyword">val</span> session = &#123;</span><br><span class="line">          <span class="comment">// Only methods that are safe to call on a disconnected channel should be invoked on 'channel'.</span></span><br><span class="line">          <span class="keyword">val</span> channel = <span class="keyword">if</span> (openChannel != <span class="literal">null</span>) openChannel <span class="keyword">else</span> selector.closingChannel(receive.source)</span><br><span class="line">          <span class="type">RequestChannel</span>.<span class="type">Session</span>(<span class="keyword">new</span> <span class="type">KafkaPrincipal</span>(<span class="type">KafkaPrincipal</span>.<span class="type">USER_TYPE</span>, channel.principal.getName), channel.socketAddress)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">val</span> req = <span class="type">RequestChannel</span>.<span class="type">Request</span>(processor = id, connectionId = receive.source, session = session,</span><br><span class="line">          buffer = receive.payload, startTimeMs = time.milliseconds, listenerName = listenerName,</span><br><span class="line">          securityProtocol = securityProtocol)</span><br><span class="line">        requestChannel.sendRequest(req)</span><br><span class="line">        selector.mute(receive.source)</span><br><span class="line">      &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> e @ (_: <span class="type">InvalidRequestException</span> | _: <span class="type">SchemaException</span>) =&gt;</span><br><span class="line">          <span class="comment">// note that even though we got an exception, we can assume that receive.source is valid. Issues with constructing a valid receive object were handled earlier</span></span><br><span class="line">          error(<span class="string">s"Closing socket for <span class="subst">$&#123;receive.source&#125;</span> because of error"</span>, e)</span><br><span class="line">          close(selector, receive.source)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>这个方法就是把之前selector读到的请求包装城session对象和request对象，放入一开始说的requestChannel队列里面。然后把对应的channel mute掉，就是transportLayer.removeInterestOps(SelectionKey.OP_READ);</p>
+<h3 id="处理已经发送的请求-processCompletedSends"><a href="#处理已经发送的请求-processCompletedSends" class="headerlink" title="处理已经发送的请求 processCompletedSends"></a>处理已经发送的请求 processCompletedSends</h3><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//processor.processCompletedSends</span></span><br><span class="line"><span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">processCompletedSends</span></span>() &#123;</span><br><span class="line">    selector.completedSends.asScala.foreach &#123; send =&gt;</span><br><span class="line">      <span class="keyword">val</span> resp = inflightResponses.remove(send.destination).getOrElse &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">IllegalStateException</span>(<span class="string">s"Send for <span class="subst">$&#123;send.destination&#125;</span> completed, but not in `inflightResponses`"</span>)</span><br><span class="line">      &#125;</span><br><span class="line">      resp.request.updateRequestMetrics()</span><br><span class="line">      selector.unmute(send.destination)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>这个方法就是根据processor.poll方法中已经成功发送应答列表，把在ProcessNewResponses这一步放入的inflightResponses的response给remove掉，然后unmute，即使把OP_READ给加回来。</p>
+<h3 id="处理已经断开的连接processDisconnected"><a href="#处理已经断开的连接processDisconnected" class="headerlink" title="处理已经断开的连接processDisconnected"></a>处理已经断开的连接processDisconnected</h3><p>这个方法就是做一些清理工作，把还没发送的响应给remove掉。connectionQuotas减掉。其中selector的disconnected队列会在客户端发起close，或者客户端超时，或者poll方法在清理过期连接等等情况的时候被加入。<br>selector的close会先把channel给close掉，再放入这个队列<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//processor.processDisconnected</span></span><br><span class="line"> <span class="keyword">private</span> <span class="function"><span class="keyword">def</span> <span class="title">processDisconnected</span></span>() &#123;</span><br><span class="line">    selector.disconnected.asScala.foreach &#123; connectionId =&gt;</span><br><span class="line">      <span class="keyword">val</span> remoteHost = <span class="type">ConnectionId</span>.fromString(connectionId).getOrElse &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="type">IllegalStateException</span>(<span class="string">s"connectionId has unexpected format: <span class="subst">$connectionId</span>"</span>)</span><br><span class="line">      &#125;.remoteHost</span><br><span class="line">      inflightResponses.remove(connectionId).foreach(_.request.updateRequestMetrics())</span><br><span class="line">      <span class="comment">// the channel has been closed by the selector but the quotas still need to be updated</span></span><br><span class="line">      connectionQuotas.dec(<span class="type">InetAddress</span>.getByName(remoteHost))</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//selector.doClose</span></span><br><span class="line">   <span class="keyword">private</span> void doClose(<span class="type">KafkaChannel</span> channel, boolean notifyDisconnect) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            channel.close();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (<span class="type">IOException</span> e) &#123;</span><br><span class="line">            log.error(<span class="string">"Exception closing connection to node &#123;&#125;:"</span>, channel.id(), e);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.sensors.connectionClosed.record();</span><br><span class="line">        <span class="keyword">this</span>.stagedReceives.remove(channel);</span><br><span class="line">        <span class="keyword">if</span> (notifyDisconnect)</span><br><span class="line">            <span class="keyword">this</span>.disconnected.add(channel.id());</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p><span id="kafka_network_1_conclution"></span></p>
+<h3 id="总结一下整个流程："><a href="#总结一下整个流程：" class="headerlink" title="总结一下整个流程："></a>总结一下整个流程：</h3><p>服务器通过一个Acceptor来接受请求，多个Processor来处理读写。Processor里面维护这kafka封装过的selector。Selector维护着注册在上面的channel，并且处理对于channel的实际读写。</p>
+<p>Acepptor把接受到的连接交给Processor的newConnection队列，Processor拿到连接并注册到自己的Selector上。</p>
+<p>Processor通过requestChannel（里面包含了请求与响应2个队列）拿到自己要处理的响应，通过selector发出，selector这时候只是找到对应的Channel并设置send属性，并打开OP_WRITE，并记录到inflightResponses队列。</p>
+<p>然后processor通过poll方法，实际调用selector的poll方法把客户端的请求读出来放入CompletedReceives队列，把对客户端的响应写到客户端,并移除OP_WRITE，放入completedSends队列。</p>
+<p>接着Processor把从CompletedReceives读到的请求构造成request，扔到requestChannel队列里面去，然后移除OP_READ（读完了，请求还没处理，不能在读了）</p>
+<p>然后Processor从completedSends队列连取出之前成功发出的响应，把对应inflightResponses移除，同时打开OP_READ。（写好了响应，可以接着接受请求了）</p>
+<p>最后处理连接断开，把对应inflightResponses里面的响应移除。</p>
+<p>可以看到Selector自己维护着channels,completedSends，completedReceives，processor从selector连获取这些信息，而且发送与接受实际完成者都是Seletor。</p>
+<p>从性能上来说，selector有多个，可以增加读写性能，因为建立连接远小于在连接上读写数据。</p>
+<p>接下来会写一下接受到的请求如何与上层API交互。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kafka/" rel="tag"># Kafka</a>
+          
+            <a href="/tags/Scala/" rel="tag"># Scala</a>
+          
+            <a href="/tags/Nio/" rel="tag"># Nio</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/08/12/Kafka_network_2/" rel="prev" title="Kafka源码学习:网络通信层(2)">
+                Kafka源码学习:网络通信层(2) <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">LongYuBo</p>
+              <p class="site-description motion-element" itemprop="description">Backend Developer</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">2</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+            
+          
+          
+        </div>
+      </section>
+
+  
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka源码学习-网络通信层-1"><span class="nav-number">1.</span> <span class="nav-text">Kafka源码学习:网络通信层(1)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#服务器的整体启动流程"><span class="nav-number">1.1.</span> <span class="nav-text">服务器的整体启动流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Processor结构"><span class="nav-number">1.2.</span> <span class="nav-text">Processor结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置新进连接-ConfigureNewConnections"><span class="nav-number">1.3.</span> <span class="nav-text">配置新进连接 ConfigureNewConnections</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#处理响应-ProcessNewResponses"><span class="nav-number">1.4.</span> <span class="nav-text">处理响应 ProcessNewResponses</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#真正的读写-poll"><span class="nav-number">1.5.</span> <span class="nav-text">真正的读写 poll</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#处理收到的结果-processCompletedReceives"><span class="nav-number">1.6.</span> <span class="nav-text">处理收到的结果 processCompletedReceives</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#处理已经发送的请求-processCompletedSends"><span class="nav-number">1.7.</span> <span class="nav-text">处理已经发送的请求 processCompletedSends</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#处理已经断开的连接processDisconnected"><span class="nav-number">1.8.</span> <span class="nav-text">处理已经断开的连接processDisconnected</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结一下整个流程："><span class="nav-number">1.9.</span> <span class="nav-text">总结一下整个流程：</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+
+    <div class="sidebar-inner">
+      
+     <iframe  style="margin-left:-8px" frameborder=0 width="240px" height="300px"    scrolling=no src="https://tb.longyb.com/sliding.html"></iframe> 
+      
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">LongYuBo</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动 v3.7.1</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a class="theme-link" target="_blank" href="https://theme-next.org">NexT.Gemini</a> v6.4.2</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s95.cnzz.com/z_stat.php?id=1274971050&web_id=1274971050" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/velocity/1.3.1/velocity.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/velocity/1.3.1/velocity.ui.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.2"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.2"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.4.2"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.4.2"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.2"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.2"></script>
+
+
+
+  
+
+  
+    <script id="dsq-count-scr" src="https://longyb.disqus.com/count.js" async></script>
+  
+
+  
+    <script type="text/javascript">
+      var disqus_config = function () {
+        this.page.url = 'http://blog.longyubo.com/2018/07/01/Kafka_network_1/';
+        this.page.identifier = '2018/07/01/Kafka_network_1/';
+        this.page.title = 'Kafka源码学习:网络通信层(1)';
+        };
+      function loadComments () {
+        var d = document, s = d.createElement('script');
+        s.src = 'https://longyb.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      }
+      
+        loadComments();
+      
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.2/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=6.4.2" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.2">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.2" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '6.4.2',
+    sidebar: {"position":"right","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="Kafka源码学习:网络通信层(2)上一篇里面讲了Kafka的服务端是如何收发请求的，这一篇主要学习一下网络层收到的数据是如何跟业务逻辑层打交道的 上篇文章讲到了processCompletedReceives方法里面把completedReceives队列里面的NetworkReceive拿出来组成了RequestChannel.Session对象，然后把这个Session对象放到了Reques">
+<meta name="keywords" content="Kafka,Scala,Nio">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka源码学习:网络通信层(2)">
+<meta property="og:url" content="http://blog.longyubo.com/2018/08/12/Kafka_network_2/index.html">
+<meta property="og:site_name" content="LongYuBo&#39;s Blog">
+<meta property="og:description" content="Kafka源码学习:网络通信层(2)上一篇里面讲了Kafka的服务端是如何收发请求的，这一篇主要学习一下网络层收到的数据是如何跟业务逻辑层打交道的 上篇文章讲到了processCompletedReceives方法里面把completedReceives队列里面的NetworkReceive拿出来组成了RequestChannel.Session对象，然后把这个Session对象放到了Reques">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2018-10-02T06:15:29.505Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Kafka源码学习:网络通信层(2)">
+<meta name="twitter:description" content="Kafka源码学习:网络通信层(2)上一篇里面讲了Kafka的服务端是如何收发请求的，这一篇主要学习一下网络层收到的数据是如何跟业务逻辑层打交道的 上篇文章讲到了processCompletedReceives方法里面把completedReceives队列里面的NetworkReceive拿出来组成了RequestChannel.Session对象，然后把这个Session对象放到了Reques">
+
+
+
+
+
+
+  <link rel="canonical" href="http://blog.longyubo.com/2018/08/12/Kafka_network_2/"/>
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Kafka源码学习:网络通信层(2) | LongYuBo's Blog</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">LongYuBo's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">Things about programming</p>
+      
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br />首页</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+    <a href="/about/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-user"></i> <br />关于</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+    <a href="/tags/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />标签</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />归档</a>
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.longyubo.com/2018/08/12/Kafka_network_2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Kafka源码学习:网络通信层(2)
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2018-08-12 15:07:35" itemprop="dateCreated datePublished" datetime="2018-08-12T15:07:35+08:00">2018-08-12</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2018-10-02 14:15:29" itemprop="dateModified" datetime="2018-10-02T14:15:29+08:00">2018-10-02</time>
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/08/12/Kafka_network_2/#comments" itemprop="discussionUrl">
+                
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/08/12/Kafka_network_2/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Kafka源码学习-网络通信层-2"><a href="#Kafka源码学习-网络通信层-2" class="headerlink" title="Kafka源码学习:网络通信层(2)"></a>Kafka源码学习:网络通信层(2)</h2><p>上一篇里面讲了Kafka的服务端是如何收发请求的，这一篇主要学习一下网络层收到的数据是如何跟业务逻辑层打交道的</p>
+<p>上篇文章讲到了processCompletedReceives方法里面把completedReceives队列里面的NetworkReceive拿出来组成了RequestChannel.Session对象，然后把这个Session对象放到了RequestChannel.Request对象里面。<br>其中Session由一个principal和一个远端地址构成</p>
+<p>Request则是由之前读到的请求的payload（NetworkReceive.payload）和当前的processorID，connectionId等信息组成，还有header:RequestHeader跟body:AbstractRequest两个成员。使用payload构造header和body。<br>请求头里面包含了api_key,api_version等信息。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RequestHeader</span> <span class="keyword">extends</span> <span class="title">AbstractRequestResponse</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Field API_KEY_FIELD = REQUEST_HEADER.get(<span class="string">"api_key"</span>);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Field API_VERSION_FIELD = REQUEST_HEADER.get(<span class="string">"api_version"</span>);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Field CLIENT_ID_FIELD = REQUEST_HEADER.get(<span class="string">"client_id"</span>);</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Field CORRELATION_ID_FIELD = REQUEST_HEADER.get(<span class="string">"correlation_id"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">short</span> apiKey;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">short</span> apiVersion;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String clientId;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> correlationId;</span><br><span class="line">    <span class="comment">//省略</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>请求体根据请求头中不同的apiKey来构造不同的请求体。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// AbstractRequest.getRequest(header.apiKey, header.apiVersion, buffer)</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> AbstractRequest <span class="title">getRequest</span><span class="params">(<span class="keyword">int</span> requestId, <span class="keyword">short</span> versionId, ByteBuffer buffer)</span> </span>&#123;</span><br><span class="line">        ApiKeys apiKey = ApiKeys.forId(requestId);</span><br><span class="line">        <span class="keyword">switch</span> (apiKey) &#123;</span><br><span class="line">            <span class="keyword">case</span> PRODUCE:</span><br><span class="line">                <span class="keyword">return</span> ProduceRequest.parse(buffer, versionId);</span><br><span class="line">            <span class="keyword">case</span> FETCH:</span><br><span class="line">                <span class="keyword">return</span> FetchRequest.parse(buffer, versionId);</span><br><span class="line">            <span class="keyword">case</span> LIST_OFFSETS:</span><br><span class="line">            <span class="comment">//以下省略</span></span><br></pre></td></tr></table></figure>
+<p>这样一个完整的request就构造出来了，构造出来之后，放入了这个processor所有的请求队列里面（RequestChannel.requestQueue.put(request)）,processCompletedReceives方法结束。</p>
+<p>放入队列之后谁又来拿出来呢？</p>
+<p>放入队列的请求被一个叫KafkaRequestHandler的类拿出来并且处理，代码如下：（我通过IDE的OPEN CALL hierarchy找到的）</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A thread that answers kafka requests.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">KafkaRequestHandler</span>(<span class="params">id: <span class="type">Int</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                          brokerId: <span class="type">Int</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                          val aggregateIdleMeter: <span class="type">Meter</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                          val totalHandlerThreads: <span class="type">Int</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                          val requestChannel: <span class="type">RequestChannel</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                          apis: <span class="type">KafkaApis</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                          time: <span class="type">Time</span></span>) <span class="keyword">extends</span> <span class="title">Runnable</span> <span class="keyword">with</span> <span class="title">Logging</span> </span>&#123;</span><br><span class="line">  <span class="keyword">this</span>.logIdent = <span class="string">"[Kafka Request Handler "</span> + id + <span class="string">" on Broker "</span> + brokerId + <span class="string">"], "</span></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">run</span></span>() &#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>) &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">var</span> req : <span class="type">RequestChannel</span>.<span class="type">Request</span> = <span class="literal">null</span></span><br><span class="line">        <span class="keyword">while</span> (req == <span class="literal">null</span>) &#123;</span><br><span class="line">          <span class="comment">// We use a single meter for aggregate idle percentage for the thread pool.</span></span><br><span class="line">          <span class="comment">// Since meter is calculated as total_recorded_value / time_window and</span></span><br><span class="line">          <span class="comment">// time_window is independent of the number of threads, each recorded idle</span></span><br><span class="line">          <span class="comment">// time should be discounted by # threads.</span></span><br><span class="line">          <span class="keyword">val</span> startSelectTime = time.nanoseconds</span><br><span class="line">          req = requestChannel.receiveRequest(<span class="number">300</span>)</span><br><span class="line">          <span class="keyword">val</span> idleTime = time.nanoseconds - startSelectTime</span><br><span class="line">          aggregateIdleMeter.mark(idleTime / totalHandlerThreads)</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(req eq <span class="type">RequestChannel</span>.<span class="type">AllDone</span>) &#123;</span><br><span class="line">          debug(<span class="string">"Kafka request handler %d on broker %d received shut down command"</span>.format(</span><br><span class="line">            id, brokerId))</span><br><span class="line">          <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line">        req.requestDequeueTimeMs = time.milliseconds</span><br><span class="line">        trace(<span class="string">"Kafka request handler %d on broker %d handling request %s"</span>.format(id, brokerId, req))</span><br><span class="line">        apis.handle(req)</span><br><span class="line">      &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> e: <span class="type">Throwable</span> =&gt; error(<span class="string">"Exception when handling request"</span>, e)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">shutdown</span></span>(): <span class="type">Unit</span> = requestChannel.sendRequest(<span class="type">RequestChannel</span>.<span class="type">AllDone</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">KafkaRequestHandlerPool</span>(<span class="params">val brokerId: <span class="type">Int</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                              val requestChannel: <span class="type">RequestChannel</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                              val apis: <span class="type">KafkaApis</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                              time: <span class="type">Time</span>,</span></span></span><br><span class="line"><span class="class"><span class="params">                              numThreads: <span class="type">Int</span></span>) <span class="keyword">extends</span> <span class="title">Logging</span> <span class="keyword">with</span> <span class="title">KafkaMetricsGroup</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* a meter to track the average free capacity of the request handlers */</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">val</span> aggregateIdleMeter = newMeter(<span class="string">"RequestHandlerAvgIdlePercent"</span>, <span class="string">"percent"</span>, <span class="type">TimeUnit</span>.<span class="type">NANOSECONDS</span>)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">this</span>.logIdent = <span class="string">"[Kafka Request Handler on Broker "</span> + brokerId + <span class="string">"], "</span></span><br><span class="line">  <span class="keyword">val</span> threads = <span class="keyword">new</span> <span class="type">Array</span>[<span class="type">Thread</span>](numThreads)</span><br><span class="line">  <span class="keyword">val</span> runnables = <span class="keyword">new</span> <span class="type">Array</span>[<span class="type">KafkaRequestHandler</span>](numThreads)</span><br><span class="line">  <span class="keyword">for</span>(i &lt;- <span class="number">0</span> until numThreads) &#123;</span><br><span class="line">    runnables(i) = <span class="keyword">new</span> <span class="type">KafkaRequestHandler</span>(i, brokerId, aggregateIdleMeter, numThreads, requestChannel, apis, time)</span><br><span class="line">    threads(i) = <span class="type">Utils</span>.daemonThread(<span class="string">"kafka-request-handler-"</span> + i, runnables(i))</span><br><span class="line">    threads(i).start()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">shutdown</span></span>() &#123;</span><br><span class="line">    info(<span class="string">"shutting down"</span>)</span><br><span class="line">    <span class="keyword">for</span>(handler &lt;- runnables)</span><br><span class="line">      handler.shutdown</span><br><span class="line">    <span class="keyword">for</span>(thread &lt;- threads)</span><br><span class="line">      thread.join</span><br><span class="line">    info(<span class="string">"shut down completely"</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到这是一个runnable，并且通过while(true)不停的拿请求出来，最后交给 apis.handle(req)方法来处理这个请求。</p>
+<p>这个KafkaRequestHandler被下面的KafkaRequestHandlerPool给拉起来的。可以从代码看到是直接拉起了numThreads个线程，共用一个apis和requestChannel实例。</p>
+<p>这个api跟kafkaRequestHandlerPool都是在kafkaServer.startup里面拉起来的。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//kafkaServer.startup方法</span></span><br><span class="line"><span class="comment">/* start processing requests */</span></span><br><span class="line">apis = <span class="keyword">new</span> <span class="type">KafkaApis</span>(socketServer.requestChannel, replicaManager, adminManager, groupCoordinator,</span><br><span class="line">  kafkaController, zkUtils, config.brokerId, config, metadataCache, metrics, authorizer, quotaManagers,</span><br><span class="line">  clusterId, time)</span><br><span class="line"></span><br><span class="line">requestHandlerPool = <span class="keyword">new</span> <span class="type">KafkaRequestHandlerPool</span>(config.brokerId, socketServer.requestChannel, apis, time,</span><br><span class="line">  config.numIoThreads)</span><br></pre></td></tr></table></figure>
+<p>从上面的代码可以看到KafkaRequestHandlerPool这个处理请求的线程池的requestChannel是从socketServer里面直接拿到的，这个池的大小就是config.numIoThreads，与processor数量一致。</p>
+<p>现在回到KafkaRequestHandler里面，看他的run方法最后是apis.handle(req)，这里简单看一下是如何处理请求的。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">handle</span></span>(request: <span class="type">RequestChannel</span>.<span class="type">Request</span>) &#123;</span><br><span class="line">   <span class="keyword">try</span> &#123;</span><br><span class="line">     trace(<span class="string">"Handling request:%s from connection %s;securityProtocol:%s,principal:%s"</span>.</span><br><span class="line">       format(request.requestDesc(<span class="literal">true</span>), request.connectionId, request.securityProtocol, request.session.principal))</span><br><span class="line">     <span class="type">ApiKeys</span>.forId(request.requestId) <span class="keyword">match</span> &#123;</span><br><span class="line">       <span class="keyword">case</span> <span class="type">ApiKeys</span>.<span class="type">PRODUCE</span> =&gt; handleProducerRequest(request)</span><br><span class="line">       <span class="keyword">case</span> <span class="type">ApiKeys</span>.<span class="type">FETCH</span> =&gt; handleFetchRequest(request)</span><br><span class="line">       <span class="keyword">case</span> <span class="type">ApiKeys</span>.<span class="type">LIST_OFFSETS</span> =&gt; handleOffsetRequest(request)</span><br><span class="line">       <span class="keyword">case</span> <span class="type">ApiKeys</span>.<span class="type">METADATA</span> =&gt; handleTopicMetadataRequest(request)</span><br><span class="line">       <span class="comment">//后面省略</span></span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以这里是根据requestId来的一个模式匹配（可以理解成java里面的switch，scala没有switch）。然后进入对应的handleXXX函数，在具体的业务逻辑完成之后，调用 </p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">requestChannel.sendResponse(<span class="keyword">new</span> <span class="type">RequestChannel</span>.<span class="type">Response</span>(request, respBody))</span><br></pre></td></tr></table></figure>
+<p>把响应发送到对应processor的响应队列中。然后响应被上一篇文章说的流程给发送出去.<br>handleXXX里面由于是多线程共同调用的，不少代码都是有锁来保护的。</p>
+<p>总结一下：<br>Processor线程负责解析请求，并把请求放入到请求队列中，另一个HandlerPool不停的从请求队列里面拿出已经解析好的请求，并执行对应的业务逻辑，完成业务逻辑之后把响应组成response放到对应processorID的响应队列中，由对应的processor发出去。<br>这个handlerPool的大小与IO线程数目一致。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Kafka/" rel="tag"># Kafka</a>
+          
+            <a href="/tags/Scala/" rel="tag"># Scala</a>
+          
+            <a href="/tags/Nio/" rel="tag"># Nio</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/07/01/Kafka_network_1/" rel="next" title="Kafka源码学习:网络通信层(1)">
+                <i class="fa fa-chevron-left"></i> Kafka源码学习:网络通信层(1)
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">LongYuBo</p>
+              <p class="site-description motion-element" itemprop="description">Backend Developer</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">2</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+            
+          
+          
+        </div>
+      </section>
+
+  
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka源码学习-网络通信层-2"><span class="nav-number">1.</span> <span class="nav-text">Kafka源码学习:网络通信层(2)</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+
+    <div class="sidebar-inner">
+      
+     <iframe  style="margin-left:-8px" frameborder=0 width="240px" height="300px"    scrolling=no src="https://tb.longyb.com/sliding.html"></iframe> 
+      
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">LongYuBo</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动 v3.7.1</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a class="theme-link" target="_blank" href="https://theme-next.org">NexT.Gemini</a> v6.4.2</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s95.cnzz.com/z_stat.php?id=1274971050&web_id=1274971050" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/velocity/1.3.1/velocity.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/velocity/1.3.1/velocity.ui.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.2"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.2"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.4.2"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.4.2"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.2"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.2"></script>
+
+
+
+  
+
+  
+    <script id="dsq-count-scr" src="https://longyb.disqus.com/count.js" async></script>
+  
+
+  
+    <script type="text/javascript">
+      var disqus_config = function () {
+        this.page.url = 'http://blog.longyubo.com/2018/08/12/Kafka_network_2/';
+        this.page.identifier = '2018/08/12/Kafka_network_2/';
+        this.page.title = 'Kafka源码学习:网络通信层(2)';
+        };
+      function loadComments () {
+        var d = document, s = d.createElement('script');
+        s.src = 'https://longyb.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      }
+      
+        loadComments();
+      
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
