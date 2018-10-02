@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>http://blog.longyubo.com/about/index.html</loc>
+    
+    <lastmod>2018-10-02T06:36:24.243Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://blog.longyubo.com/tags/index.html</loc>
+    
+    <lastmod>2018-10-02T06:23:54.965Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://blog.longyubo.com/2018/08/12/Kafka_network_2/</loc>
+    
+    <lastmod>2018-10-02T06:15:29.505Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://blog.longyubo.com/2018/07/01/Kafka_network_1/</loc>
+    
+    <lastmod>2018-10-02T06:15:05.987Z</lastmod>
+    
+  </url>
+  
+</urlset>
