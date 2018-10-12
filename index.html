@@ -303,6 +303,277 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.longyubo.com/2018/10/12/cardinality_estimation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/10/12/cardinality_estimation/" itemprop="url">
+                  基数估计算法简介
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2018-10-12 21:40:00 / 修改时间：22:42:28" itemprop="dateCreated datePublished" datetime="2018-10-12T21:40:00+08:00">2018-10-12</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/10/12/cardinality_estimation/#comments" itemprop="discussionUrl">
+                
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/10/12/cardinality_estimation/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="基数估计算法简介"><a href="#基数估计算法简介" class="headerlink" title="基数估计算法简介"></a>基数估计算法简介</h2><p>注：本文是之前工作时在团队内分享的一个PPT的文字版本.</p>
+<p>下文中的sqrt表示开根号(sqrt(4)=2)，m^n表示m的n次方</p>
+<h3 id="什么是基数（Cardinality）"><a href="#什么是基数（Cardinality）" class="headerlink" title="什么是基数（Cardinality）"></a>什么是基数（Cardinality）</h3><p>基数指的是一个可重复集合中不重复元素的个数。</p>
+<h3 id="什么是基数计算"><a href="#什么是基数计算" class="headerlink" title="什么是基数计算"></a>什么是基数计算</h3><p>给定一个含有重复元素的有限集合，计算其不重复元素的个数。</p>
+<p>应用场景举例:</p>
+<ul>
+<li>某家店铺今天有多少不同用户访问</li>
+<li>某家店铺今天接待了多少不同买家</li>
+</ul>
+<p>简单来说就是各种UV的计算</p>
+<p>常见的实现方式</p>
+<p>Hash集合 + 计数 或者 BitMap + 计数</p>
+<p>缺陷：占用空间过大</p>
+<p>###什么是基数估计算法</p>
+<p>基数估计是一类概率算法，可以在有一定误差的前提下以远低于精确计算的时间和空间消耗对基数进行估计</p>
+<p>特点</p>
+<ul>
+<li>有误差</li>
+<li>时间复杂度和空间复杂度仅与误差和基数上限有关</li>
+<li>易于合并</li>
+</ul>
+<h3 id="有哪些基数估计算法"><a href="#有哪些基数估计算法" class="headerlink" title="有哪些基数估计算法"></a>有哪些基数估计算法</h3><ul>
+<li>Linear Counting</li>
+<li>LogLog Counting</li>
+<li>Adaptive Counting</li>
+<li>HyperLogLog Counting</li>
+<li>HyperLogLog++ Counting</li>
+</ul>
+<p>它们之间的关系如下图所示：</p>
+<p><img src="http://opui0kl1z.bkt.clouddn.com/counting_tree.png" alt=""></p>
+<h2 id="Linear-Counting"><a href="#Linear-Counting" class="headerlink" title="Linear Counting"></a>Linear Counting</h2><p>Linear Counting是在1990年的一篇论文<br><a href="http://101.96.10.27/dblab.kaist.ac.kr/Prof/pdf/Whang1990(linear).pdf" target="_blank" rel="noopener">A linear-time probabilistic counting algorithm for database applications</a> 中被提出。</p>
+<p>作为一个早期的基数估计算法，Linear Counting的空间复杂度方面与简单bitmap方法是一样的（但是有个常数项级别的降低，约1/10），都是O(N)。 因此很少单独使用。目前只在Adaptive Counting中被混合使用</p>
+<p>特点：在基数较小时比较准确</p>
+<p>具体算法如下:</p>
+<p>设有一哈希函数H，其哈希结果空间有m个值，并且哈希结果服从均匀分布。</p>
+<p>使用一个长度为m的bitmap，每个bit为一个桶，均初始化为0 </p>
+<p>设一个集合的基数为n，此集合所有元素通过H哈希到bitmap中，如果某一个元素被哈希到第k个比特并且第k个比特为0，则将其置为1。</p>
+<p>当集合所有元素哈希完成后，设bitmap中还有u个bit为0</p>
+<p>估计值 n = -mLn(u/m)</p>
+<p>误差 = (e^t-t-1)/2n 其中 t = n/m 也就是基数与哈希空间的比值</p>
+<p>标准差 = (sqrt(m)*(e^t-t-1)^0.5)/n</p>
+<p>误差控制，以标准差作为误差，记容许误差为E，则 m &gt; (e^t -t -1)/(E*t)^2</p>
+<p>例子:</p>
+<p>n=11(实际数目) m=8(哈希空间) u=2(0的个数)</p>
+<p>估计值=-8*ln(0.25)=11.04</p>
+<p><img src="http://opui0kl1z.bkt.clouddn.com/lc_example.png" alt=""></p>
+<p>满桶控制:</p>
+<p>如果m比n小太多，则很有可能所有桶都被哈希到了，此时u的值为0，估计公式就不起作用了（变成无穷大）。</p>
+<p>因此m的选择除了要满足上面误差控制的需求外，还要保证满桶的概率非常小。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">m的选取应该遵从:</span><br><span class="line">m &gt; beta(e^t-t-1) 其中 beta=max(5,1/((E*t)^2))</span><br></pre></td></tr></table></figure>
+<h2 id="LogLog-Counting"><a href="#LogLog-Counting" class="headerlink" title="LogLog Counting"></a>LogLog Counting</h2><p>LogLog Counting 出自论文<a href="http://algo.inria.fr/flajolet/Publications/DuFl03-LNCS.pdf" target="_blank" rel="noopener">Loglog Counting of Large Cardinalities</a></p>
+<p>Loglog Counting的空间复杂度仅有O(log2(log2(Nmax)))，所以叫LogLog Counting</p>
+<h3 id="算法前提"><a href="#算法前提" class="headerlink" title="算法前提"></a>算法前提</h3><p>均匀随机化:与LC一样，在使用LLC之前需要选取一个哈希函数H应用于所有元素，然后对哈希值进行基数估计。H必须满足如下条件</p>
+<ul>
+<li><p>H的结果具有很好的均匀性，无论原始集合元素的值分布如何，其哈希结果的值<b>几乎</b>服从均匀分布</p>
+</li>
+<li><p>H的碰撞几乎可以忽略不计。认为对于不同的原始值，其哈希结果相同的概率非常小以至于可以忽略不计。</p>
+</li>
+<li><p>H的哈希结果是固定长度的 </p>
+</li>
+</ul>
+<h3 id="算法基本思路"><a href="#算法基本思路" class="headerlink" title="算法基本思路"></a>算法基本思路</h3><p>设a为待估集合（哈希后）中的一个元素，由上面对H的定义可知，a可以看做一个长度固定的比特串（也就是a的二进制表示）.</p>
+<p>设H哈希后的结果长度为L比特，将这L个比特位从左到右分别编号为1、2、…、L：</p>
+<p><img src="http://opui0kl1z.bkt.clouddn.com/loglog_hash.png" alt=""></p>
+<p>又因为a是从服从均与分布的样本空间中随机抽取的一个样本，因此a每个比特位服从如下分布且相互独立。</p>
+<p> P(x=k)=0.5 </p>
+<p>就是a的每个比特位为0和1的概率各为0.5，且相互之间是独立的</p>
+<p>设ρ(a)为a的比特串中第一个“1”出现的位置，显然1≤ρ(a)≤L，这里我们忽略比特串全为0的情况（概率为1/2^L）。如果我们遍历集合中所有元素的比特串，取ρmax 为所有ρ(a) 的最大值。</p>
+<p>此时我们可以将2^ρmax 作为基数的一个粗糙估计，即</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">n 约为 2^ρmax</span><br></pre></td></tr></table></figure>
+<p>减小误差</p>
+<ul>
+<li>分桶平均</li>
+<li>偏差修正</li>
+</ul>
+<p>分桶平均</p>
+<p>将哈希空间平均分成m份，每份称之为一个桶</p>
+<p>对于每一个元素，其哈希值的前k比特作为桶编号， 2^k = m</p>
+<p>后L-k个比特作为真正用于基数估计的比特串</p>
+<p>桶编号相同的元素被分配到同一个桶，在进行基数估计时，首先计算每个桶内元素最大的第一个“1”的位置，设为M[j]，然后对这m个值取平均后再进行估计</p>
+<p><img src="http://opui0kl1z.bkt.clouddn.com/llc_math_mean_2.png" alt=""></p>
+<p>误差修正:</p>
+<p><img src="http://opui0kl1z.bkt.clouddn.com/llc_result.png" alt=""></p>
+<p>误差分析<br>当m不太小（不小于64）时:</p>
+<p>StdError = 1.30/sqrt(m) </p>
+<p>误差控制:<br>在应用LLC时，主要需要考虑的是分桶数m，而这个m主要取决于误差。根据上面的误差分析，如果要将误差控制在E之内，则：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">m &gt; (1.30/E)^2</span><br></pre></td></tr></table></figure></p>
+<p>内存使用分析:</p>
+<p>假设H的值为32bit，由于ρmax≤32，因此每个桶需要5bit空间存储这个桶的ρmax，m个桶就是5m/8字节。</p>
+<p>例如基数上限为一亿（约2^27），当分桶数m为1024时，每个桶的基数上限约为2^27/2^10=2^17</p>
+<p>因为每个桶需要5bit，需要字节数就是5×1024/8=640，误差为1.30/sqrt(1024)=0.040625，也就是约为4%。</p>
+<p>LLC标准差是渐近组合计数，也就是说，随着n趋向于无穷大，标准差趋向于1.30/sqrt(m)，而不是说n多大时其值都一致为1.30/sqrt(m).</p>
+<p>其无偏性也是渐近的，只有当n远远大于m时，其估计值才近似无偏。因此当n不太大时，LLC的效果并不好。</p>
+<p>通过统计分析方法，我们可以得到n具体小到什么程度我们就不可忍受了，另外就是当n太小时可不可以用别的估计方法替代LLC来弥补LLC这个缺陷。Adaptive Counting 及HyperLogLog Counting都是基于这个思想实现的。</p>
+<h2 id="Adaptive-Counting"><a href="#Adaptive-Counting" class="headerlink" title="Adaptive Counting"></a>Adaptive Counting</h2><p>Adaptive Counting在<a href="http://conferences.sigcomm.org/sigcomm/2005/paper-CaiPan.pdf" target="_blank" rel="noopener">Fast and accurate traffic matrix measurement using adaptive cardinality counting</a>中被提出。</p>
+<p>Adaptive Counting只是简单将LC和LLC组合使用，根据基数量级决定是使用LC还是LLC。具体是通过分析两者的标准差，给出一个阈值，根据阈值选择使用哪种估计。</p>
+<p>特点：在基数较大时比较准确</p>
+<p>分析一下LC和LLC的存储结构，可以发现两者是兼容的，区别仅仅在于LLC关心每个桶的ρmax，而LC仅关心此桶是否为空。因此只要简单认为ρmax值不为0的桶为非空，0为空就可以使用LLC的数据结构做LC估计了。 </p>
+<p>联立linear counting和loglog Counting的误差<br><img src="http://opui0kl1z.bkt.clouddn.com/lc_se.png" alt=""><br><img src="http://opui0kl1z.bkt.clouddn.com/llc_se.png" alt=""><br><img src="http://opui0kl1z.bkt.clouddn.com/adaptive_counting.png" alt=""></p>
+<h2 id="HyperLogLog-Counting"><a href="#HyperLogLog-Counting" class="headerlink" title="HyperLogLog Counting"></a>HyperLogLog Counting</h2><p>HyperLogLog Counting的基本思想也是在LLC的基础上做改进， 来自论文 <a href="http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf" target="_blank" rel="noopener">HyperLogLog: the analysis of a near-optimal cardinality estimation algorithm</a></p>
+<p>改进:用调和平均数替代几何平均数</p>
+<p>调和平均数<br><img src="http://opui0kl1z.bkt.clouddn.com/harmonic_mean.jpg" alt=""></p>
+<p>LLC是对各个桶取算数平均数，最终被应用到2的指数上，所以LLC取得是几何平均数。由于几何平均数对于离群值（例如这里的0）特别敏感，因此当存在离群值时，LLC的偏差就会很大.</p>
+<p>当n较小,可能存在较多空桶，而这些特殊的离群值强烈干扰了几何平均数的稳定性。</p>
+<p>估值公式以及误差:</p>
+<p><img src="http://opui0kl1z.bkt.clouddn.com/hyperloglog_result.png" alt=""></p>
+<p>根据论文中的分析结论，与LLC一样HLLC是渐近无偏估计，且其渐近标准差为：</p>
+<pre><code>SE=1.04/sqrt(m)
+</code></pre><p>分段偏差修正:</p>
+<p>在HLLC的论文中，作者在实现建议部分还给出了在n相对于m较小或较大时的偏差修正方案<br><img src="http://opui0kl1z.bkt.clouddn.com/hllc_corretion.png" alt=""></p>
+<h2 id="HyperLogLog-Plus"><a href="#HyperLogLog-Plus" class="headerlink" title="HyperLogLog Plus"></a>HyperLogLog Plus</h2><p>HyperLogLog plus 是Google的改进版。来自论文 <a href="http://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/40671.pdf" target="_blank" rel="noopener">HyperLogLog in Practice: Algorithmic Engineering of a<br>State of The Art Cardinality Estimation Algorithm</a></p>
+<p>是一个工程改进版，包括使用FNV64代替原始的32位Hash函数，分段偏差修正等工程上的改进，无法严格证明</p>
+<h2 id="Java中的相关实现"><a href="#Java中的相关实现" class="headerlink" title="Java中的相关实现"></a>Java中的相关实现</h2><ul>
+<li><a href="https://github.com/twitter/algebird" target="_blank" rel="noopener">twitter/algebird</a>  a scala library from twitter which contains lots of different algorithms including HLL</li>
+<li><a href="https://github.com/prasanthj/hyperloglog" target="_blank" rel="noopener">prasanthj/hyperloglog</a>  a detached java library for HLL </li>
+<li><a href="https://github.com/addthis/stream-lib" target="_blank" rel="noopener">addthis/stream-lib</a> - another java lib(本人之前在项目中使用的这个库，还不错)</li>
+<li><p><a href="https://github.com/aggregateknowledge/java-hll" target="_blank" rel="noopener">aggregateknowledge/java-hll</a>  a low-level java implementation of HLL </p>
+</li>
+<li><p><a href="http://koff.io/posts/comparison-of-hll/" target="_blank" rel="noopener">Comparison of HLL implementations</a> 各种实现的相关比较</p>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://blog.longyubo.com/2018/10/04/Zgc_Introduction/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -954,7 +1225,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-count">4</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -983,7 +1254,13 @@
                     
                       
                     
-                    <span class="site-state-item-count">7</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">10</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>

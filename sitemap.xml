@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://blog.longyubo.com/2018/10/12/cardinality_estimation/</loc>
+    
+    <lastmod>2018-10-12T14:42:28.153Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://blog.longyubo.com/2018/10/04/Zgc_Introduction/</loc>
     
     <lastmod>2018-10-04T07:58:45.818Z</lastmod>
