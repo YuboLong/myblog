@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.2/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=6.4.2" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.2">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.2" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '6.4.2',
+    sidebar: {"position":"right","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="论文笔记：Scaling Memcache at Facebook论文介绍了Facebook如何使用memcache，以及相关魔改和维护memcache集群。 背景facebook使用一致性哈希来构建memcahce集群。 We provision hundreds of memcached servers in a cluster to reduce load on databases and">
+<meta name="keywords" content="cache,论文笔记">
+<meta property="og:type" content="article">
+<meta property="og:title" content="论文笔记：Scaling Memcache at Facebook">
+<meta property="og:url" content="https://blog.longyb.com/2018/12/17/facebook_scale_memcache/index.html">
+<meta property="og:site_name" content="LongYuBo&#39;s Blog">
+<meta property="og:description" content="论文笔记：Scaling Memcache at Facebook论文介绍了Facebook如何使用memcache，以及相关魔改和维护memcache集群。 背景facebook使用一致性哈希来构建memcahce集群。 We provision hundreds of memcached servers in a cluster to reduce load on databases and">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://sinacloud.net/longyb-myblog/fb_cache_aside.png">
+<meta property="og:image" content="http://sinacloud.net/longyb-myblog/fb_udp_improvement.png">
+<meta property="og:updated_time" content="2018-12-17T14:35:18.312Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="论文笔记：Scaling Memcache at Facebook">
+<meta name="twitter:description" content="论文笔记：Scaling Memcache at Facebook论文介绍了Facebook如何使用memcache，以及相关魔改和维护memcache集群。 背景facebook使用一致性哈希来构建memcahce集群。 We provision hundreds of memcached servers in a cluster to reduce load on databases and">
+<meta name="twitter:image" content="http://sinacloud.net/longyb-myblog/fb_cache_aside.png">
+
+
+
+
+
+
+  <link rel="canonical" href="https://blog.longyb.com/2018/12/17/facebook_scale_memcache/"/>
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>论文笔记：Scaling Memcache at Facebook | LongYuBo's Blog</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">LongYuBo's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">Things about programming</p>
+      
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br />首页</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+    <a href="/about/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-user"></i> <br />关于</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+    <a href="/tags/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />标签</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />归档</a>
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2018/12/17/facebook_scale_memcache/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">论文笔记：Scaling Memcache at Facebook
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2018-12-17 22:07:00 / 修改时间：22:35:18" itemprop="dateCreated datePublished" datetime="2018-12-17T22:07:00+08:00">2018-12-17</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/12/17/facebook_scale_memcache/#comments" itemprop="discussionUrl">
+                
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/12/17/facebook_scale_memcache/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="论文笔记：Scaling-Memcache-at-Facebook"><a href="#论文笔记：Scaling-Memcache-at-Facebook" class="headerlink" title="论文笔记：Scaling Memcache at Facebook"></a>论文笔记：Scaling Memcache at Facebook</h2><p>论文介绍了Facebook如何使用memcache，以及相关魔改和维护memcache集群。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>facebook使用一致性哈希来构建memcahce集群。</p>
+<pre><code>We provision hundreds of memcached servers in a cluster to reduce load on databases and other services.
+Items are distributed across the memcached servers through consistent hashing [22]. 
+Thus web servers have to routinely communicate with many memcached servers to satisfy a user request
+</code></pre><h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><h3 id="cache-aside模式"><a href="#cache-aside模式" class="headerlink" title="cache aside模式"></a>cache aside模式</h3><p>facebook根据他们的场景，也就是读多写少使用了cache aside模式。原文叫demand-filled look-aside cache。具体使用方式如下图。<br><img src="http://sinacloud.net/longyb-myblog/fb_cache_aside.png" alt=""><br>facebook 使用delete而不是update缓存的原因是因为delete是幂等的，而update不是(we choose to delete cached data instead of updating it because deletes are idempotent).如果直接更新可能出现先更新的后放入缓存。</p>
+<p>在facebook也是用memcache作为大数据平台计算的中间结果存储平台，用来存放一些中间结果</p>
+<h2 id="魔改"><a href="#魔改" class="headerlink" title="魔改"></a>魔改</h2><h3 id="魔改背景"><a href="#魔改背景" class="headerlink" title="魔改背景"></a>魔改背景</h3><p>一个web请求会请求平均521个独立的缓存项.(A single user web request can often result in hundreds of individual memcache get requests. For example, loading one of our popular pages results in an average of 521 distinct items fetched from memcache)</p>
+<h3 id="魔改目的"><a href="#魔改目的" class="headerlink" title="魔改目的"></a>魔改目的</h3><p>魔改的目的是为了降低延迟，降低负载。</p>
+<h3 id="魔改方法"><a href="#魔改方法" class="headerlink" title="魔改方法"></a>魔改方法</h3><p>延迟与负载：1.网络延迟 2.由于cache miss带来的延迟和后端的负载。解决方案如下：</p>
+<ol>
+<li>代码批量化访问缓存，减少来回的网络开销</li>
+<li>对于网络延迟的降低，facebook对于GET使用UDP传输，SET和DELETE使用TCP传输。因为UDP是无连接的，可以降低TCP维护链接的开销。使用UDP客户端自己记录请求序号，丢包和乱序被视为客户端错误，在实际生产环境中，有0.25%的get请求被扔掉。其中的80%是因为回包延迟，其他的是因为乱序。对于上面的错误，客户端直接认为是cache miss。直接取后端，但是不会放入缓存是为了避免额外的网络开销<br>效果如下图:<br><img src="http://sinacloud.net/longyb-myblog/fb_udp_improvement.png" alt=""></li>
+<li>使用类似TCP拥塞控制的方法来防止缓存集群负载过高。客户端维护一个滑动窗口，当服务端正常响应，就加大窗口，当服务端没响应或者超时就减小窗口。</li>
+</ol>
+<h3 id="后端负载降低"><a href="#后端负载降低" class="headerlink" title="后端负载降低"></a>后端负载降低</h3><ol>
+<li>引入“租约Leases”，租约用来解决两个方面的问题 1. 过期的设置 2.惊群效应（stale sets and thundering herds）。</li>
+</ol>
+<ul>
+<li>过期的设置主要来源于放入缓存的顺序错乱（后来先到）。</li>
+<li>惊群效应发生在某个key被频繁的读写。由于写是invalid cache，所以大量读请求就会无法命中缓存，导致进入了后端的数据库。</li>
+<li>租约就是一个对应于请求的key的64bit的token。（The lease is a 64-bit token bound to the specific key the client originally requested）。当set cache的时候，客户端需要把这个key带上一起给到缓存服务器，当服务端发现token不匹配的时候，就说明这是一个过期的写请求。</li>
+<li>租约同时可以降低惊群效应。缓存服务器控制发token的频率，默认是10秒一次，缓存服务器发过一次token后，后续再来的请求就直接等一会（等前面那个拿到token的返回之后，缓存就有数据了）<br>Without leases, all of the cache misses resulted in a peak database query rate of 17K/s. With leases, the peak database query rate was 1.3K/s</li>
+</ul>
+<ol start="2">
+<li>使用过期值</li>
+</ol>
+<ul>
+<li>通过返回slightly out-of-date data，当一个key被删除的时候，在真正flush之前，会被放入一个特殊的数据结构中。get请求可以返回一个租约或者这个被标记为过期的值。</li>
+</ul>
+<ol start="3">
+<li>处理失败，这里的失败有两种</li>
+</ol>
+<ul>
+<li>有一小部分机器由于网络原因无法访问（facebook依赖一个自动化的组件去发现这些机器，但需要时间 few minutes，在这一段时间内可能会带来一些连锁失败）<br> 解决办法：有一个叫gutter的小池子，大概是cache集群的1%大小，用来替代那些无法访问的机器。当client无法收到缓存服务器的响应，他们就去访问gutter池子里面的机器。注意这根一般一致性哈希的玩法不一样，原因是有可能有些key非常的热，如果把它hash到下一台机器，就会增加那台机器的负载，导致又爆炸。把它导到空闲的gutter机器上就可以避免这个问题。一旦出现一台缓存机器无法访问，gutter通常能在4分钟内，缓存命中率能超过35%，有时能达到50%</li>
+<li>集群中的大部分机器都无法访问<br> 解决办法：切换流量到其他可用region</li>
+</ul>
+<h3 id="维护memcache集群"><a href="#维护memcache集群" class="headerlink" title="维护memcache集群"></a>维护memcache集群</h3><p>待续</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/cache/" rel="tag"># cache</a>
+          
+            <a href="/tags/论文笔记/" rel="tag"># 论文笔记</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/10/12/cardinality_estimation/" rel="next" title="基数估计算法简介">
+                <i class="fa fa-chevron-left"></i> 基数估计算法简介
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">LongYuBo</p>
+              <p class="site-description motion-element" itemprop="description">Backend Developer</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">5</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">12</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+            
+          
+          
+        </div>
+      </section>
+
+  
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#论文笔记：Scaling-Memcache-at-Facebook"><span class="nav-number">1.</span> <span class="nav-text">论文笔记：Scaling Memcache at Facebook</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用"><span class="nav-number">3.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cache-aside模式"><span class="nav-number">3.1.</span> <span class="nav-text">cache aside模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#魔改"><span class="nav-number">4.</span> <span class="nav-text">魔改</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#魔改背景"><span class="nav-number">4.1.</span> <span class="nav-text">魔改背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#魔改目的"><span class="nav-number">4.2.</span> <span class="nav-text">魔改目的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#魔改方法"><span class="nav-number">4.3.</span> <span class="nav-text">魔改方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#后端负载降低"><span class="nav-number">4.4.</span> <span class="nav-text">后端负载降低</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#维护memcache集群"><span class="nav-number">4.5.</span> <span class="nav-text">维护memcache集群</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+
+    <div class="sidebar-inner">
+      
+     <iframe  style="margin-left:-8px" frameborder=0 width="240px" height="300px"    scrolling=no src="https://tb.longyb.com/sliding.html"></iframe> 
+      
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">LongYuBo</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动 v3.7.1</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a class="theme-link" target="_blank" href="https://theme-next.org">NexT.Gemini</a> v6.4.2</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s95.cnzz.com/z_stat.php?id=1274971050&web_id=1274971050" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/velocity/1.3.1/velocity.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/velocity/1.3.1/velocity.ui.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.2"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.2"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.4.2"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.4.2"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.2"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.2"></script>
+
+
+
+  
+
+  
+    <script id="dsq-count-scr" src="https://longyb.disqus.com/count.js" async></script>
+  
+
+  
+    <script type="text/javascript">
+      var disqus_config = function () {
+        this.page.url = 'https://blog.longyb.com/2018/12/17/facebook_scale_memcache/';
+        this.page.identifier = '2018/12/17/facebook_scale_memcache/';
+        this.page.title = '论文笔记：Scaling Memcache at Facebook';
+        };
+      function loadComments () {
+        var d = document, s = d.createElement('script');
+        s.src = 'https://longyb.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      }
+      
+        loadComments();
+      
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
