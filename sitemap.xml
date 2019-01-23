@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2019/01/23/transaction_mq/</loc>
+    
+    <lastmod>2019-01-23T15:28:02.310Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2018/10/12/cardinality_estimation/</loc>
     
     <lastmod>2018-12-17T14:59:47.424Z</lastmod>
