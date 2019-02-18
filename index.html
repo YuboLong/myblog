@@ -1,5 +1,19 @@
 <!DOCTYPE html>
 
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
 <html class="theme-next gemini use-motion" lang="zh-CN">
 <head>
   <meta charset="UTF-8"/>
@@ -7,9 +21,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2"/>
 <meta name="theme-color" content="#222">
 
+
+
+
+
+
+
+
+
+
+
+
 <meta http-equiv="Cache-Control" content="no-transform" />
 <meta http-equiv="Cache-Control" content="no-siteapp" />
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
 <link href="//cdn.bootcss.com/font-awesome/4.6.2/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
 
@@ -26,6 +73,14 @@
 
 
   <link rel="mask-icon" href="/images/logo.svg?v=6.4.2" color="#222">
+
+
+
+
+
+
+
+
 
 <script type="text/javascript" id="hexo.configurations">
   var NexT = window.NexT || {};
@@ -232,6 +287,183 @@
           <div id="content" class="content">
             
   <section id="posts" class="posts-expand">
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/02/18/cassandra_setup/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/18/cassandra_setup/" itemprop="url">
+                  Cassandra源码阅读(1)-启动流程
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-02-18 22:10:00 / 修改时间：23:41:01" itemprop="dateCreated datePublished" datetime="2019-02-18T22:10:00+08:00">2019-02-18</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/02/18/cassandra_setup/#comments" itemprop="discussionUrl">
+                
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/02/18/cassandra_setup/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Cassandra源码阅读-1-：启动流程"><a href="#Cassandra源码阅读-1-：启动流程" class="headerlink" title="Cassandra源码阅读(1)：启动流程"></a>Cassandra源码阅读(1)：启动流程</h1><p>本文简述cassandra的启动流程，目的主要是形成一个整体的大概印象。后面的文章会详细分析Cassandra的读写流程，同步流程，失败处理，集群通信等等相关信息。</p>
+<p>Cassandra的主入口是CassandraDaemon这个类，通过activate启动，主要会有如下步骤：</p>
+<ol>
+<li>读配置，主要是通过DatabaseDescriptor完成的</li>
+<li>初始化JMX，系统日志等。</li>
+<li>启动检查，startupchecks，这里会检查一些基本信息，比如jemalloc库是否存在，jvm参数，datadir数据文件夹，sstableformat等。</li>
+<li>设置线程默认异常处理器</li>
+<li>对于schema，keyspace相关信息</li>
+<li>初始化keyspace</li>
+<li>读rowcache和keycache</li>
+<li>重放commitlog</li>
+<li>对于tokenaware的partition读先前本地存的tokenMetadata</li>
+<li>注册metric</li>
+<li>初始化StorageService.initServer其中有几个比较重要步骤<ol>
+<li>prepareJoin中启动了Gossip以及MessagingService（这个service是供内部通信的，storagePort 7000的那个）</li>
+<li>CacheService初始化</li>
+<li>joinTokenRing，加入集群hash环，里面会区分是新加节点还是replace原来的节点</li>
+</ol>
+</li>
+<li>构建keyspaceview</li>
+<li>打开后台compact线程</li>
+<li>打开nativeTransport，这个是用来接收客户端CQL的（默认端口9042）</li>
+</ol>
+<p>至此启动过程完毕。</p>
+<p>下面用图简单描述一下各个组件的功能与关系（由于我自己也是刚开始看cassandra，后续会陆续完善这个图）</p>
+<p><img src="https://sinacloud.net/longyb-myblog/cassandra/Cassandra1-overview.png" alt=""></p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
     
       
 
@@ -1588,7 +1820,7 @@ Thus web servers have to routinely communicate with many memcached servers to sa
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">6</span>
+                    <span class="site-state-item-count">7</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -1631,7 +1863,9 @@ Thus web servers have to routinely communicate with many memcached servers to sa
                     
                       
                     
-                    <span class="site-state-item-count">14</span>
+                      
+                    
+                    <span class="site-state-item-count">15</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
