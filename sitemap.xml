@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2019/03/03/cassandra_write_path/</loc>
+    
+    <lastmod>2019-03-03T14:35:38.528Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/02/18/cassandra_setup/</loc>
     
     <lastmod>2019-02-18T15:41:01.511Z</lastmod>

@@ -303,6 +303,179 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/03/03/cassandra_write_path/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/03/cassandra_write_path/" itemprop="url">
+                  Cassandra源码阅读(2)-写流程解析
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-03-03 22:24:00 / 修改时间：22:35:38" itemprop="dateCreated datePublished" datetime="2019-03-03T22:24:00+08:00">2019-03-03</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/03/cassandra_write_path/#comments" itemprop="discussionUrl">
+                
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/03/03/cassandra_write_path/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Cassandra源码阅读-2-写流程解析"><a href="#Cassandra源码阅读-2-写流程解析" class="headerlink" title="Cassandra源码阅读(2):写流程解析"></a>Cassandra源码阅读(2):写流程解析</h1><p>本文以简单的写操作为例来分析，这里介绍的不包括CQL解析，Trigger，counter，view的更新，对于tokenRing的具体选择方法这里也暂时不涉及，只涉及最基础的写流程。上面说到的这些后续会有分析文章。</p>
+<p>文章更新日志：<br>2019-03-03 介绍到CommitLog</p>
+<ol>
+<li><p>客户端发起写请求到服务端解析成一个QueryMessage，然后通过对应的QueryHandler.process处理，里面会包括CQL的解析，已经具体变更的执行，也就是ProcessStatement</p>
+</li>
+<li><p>Processstatment会先根据consistent level来判断是否需要把写发送到其他副本上，这里以non-local为例子分析。</p>
+</li>
+<li><p>判断是不是LWT（light weight transaction，通过hasCondition判断),如果是会调用StorageProxy.cas起一个Paxos同步流程，这里以非LWT为例，LWT后面再说。</p>
+</li>
+<li><p>判断是否是virtualTable或者是Counter，这两个的更新处理逻辑不一样，这里以标准的更新为例，暂时不管这两种特殊处理。</p>
+</li>
+<li><p>调用storageProxy.mutateWithTrigger，接着进入storageproxy.mutate，在mutate里面会调用storageProxy.performWite 这个方法里面会通过ReplicaPlans.forWrite生成对应的副本写入的replicaPlan。<br>接着修改被代理到StandardWritePerformor的Apply中。在Apply里面会根据ReplicaPlan把修改发送到对应的节点上去。<br>发送的具体内容是一个MessageOut对象，里面包含了一个Verb（操作类型）和对应的Mutation对象，mutation对象里面包含了对于表所有需要变更的内容。</p>
+</li>
+<li><p>副本机器接收到需要修改的对象之后，根据Verb来选择具体的操作，这里因为是写，所以以Verb=mutation为例。</p>
+</li>
+<li><p>写最后会被代理到Keyspace.applyInternal。下面详细说明Keyspace.applyInternal的流程</p>
+</li>
+<li><p>和其他的数据库一样首先会写CommitLog，具体代码是getWriteHandler().beginWrite(mutation, makeDurable)里面调用CommitLog.instance.add(Mutation)，先把mutation序列化到一个内存ByteBuffer，然后把这个ByteBuffer写到一个基于文件的buffer（在代码里是 CommitLogSegment.Allocation 里面的buffer）里，这个基于文件的buffer根据配置可以是加密/压缩/无特殊配置，对于无特殊配置，cassandra是用的MappedByteBuffer，这个buffer默认是每隔10s调用一次同步(buffer.force())</p>
+</li>
+<li><p>目前暂时看到这里，后面陆续更新</p>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/02/18/cassandra_setup/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1820,7 +1993,7 @@ Thus web servers have to routinely communicate with many memcached servers to sa
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">7</span>
+                    <span class="site-state-item-count">8</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
