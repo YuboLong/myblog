@@ -454,8 +454,8 @@
 <h3 id="PartitionUpdate"><a href="#PartitionUpdate" class="headerlink" title="PartitionUpdate"></a>PartitionUpdate</h3><p>PartitionUpdate是AbstractBTreePartition的子类，里面以BTREE的结构包含了需要更新的Row。</p>
 <p>这么说可能比较绕，下面的图可以比较清晰的看到具体的结构。</p>
 <h3 id="结构示意"><a href="#结构示意" class="headerlink" title="结构示意"></a>结构示意</h3><p>Memtable代码结构示意图</p>
-<p><img src="https://sinacloud.net/longyb-myblog/cassandra/CssandraMemtableStructure%20.png?KID=sina,yk6731xnhRdTJcksq3BO&amp;Expires=1552922493&amp;ssig=iflynppE7p" alt="CassandraMemtableStructure"></p>
-<p>Memtable代码与表概念对照图。红色是代码名称，黑色是Cassandra中通用概念<br><img src="https://sinacloud.net/longyb-myblog/cassandra/CassandraMemtable_CodeName_TableName.png?KID=sina,yk6731xnhRdTJcksq3BO&amp;Expires=1552922493&amp;ssig=zWLQ9KlHy2" alt="CassandraMemtableStructure"></p>
+<p><img src="https://sinacloud.net/longyb-myblog/cassandra/CssandraMemtableStructure%20.png" alt="CassandraMemtableStructure"></p>
+<p>Memtable代码与表概念对照图。红色是代码名称，黑色是Cassandra中通用概念<br><img src="https://sinacloud.net/longyb-myblog/cassandra/CassandraMemtable_CodeName_TableName.png" alt="CassandraMemtableStructure"></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文介绍了cassandra写入memtable的基本流程，以及memtable的结构。下一篇文章将介绍memtable flush到sstable的过程</p>
 
       
