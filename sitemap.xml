@@ -2,9 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/</loc>
+    
+    <lastmod>2019-04-22T13:54:47.118Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/03/03/cassandra_write_path/</loc>
     
-    <lastmod>2019-03-18T14:20:50.660Z</lastmod>
+    <lastmod>2019-04-22T13:50:46.279Z</lastmod>
     
   </url>
   
