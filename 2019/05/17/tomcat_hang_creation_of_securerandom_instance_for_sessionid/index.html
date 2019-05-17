@@ -110,29 +110,25 @@
 
 
 
-  <meta name="description" content="事务消息组件的套路本文介绍一些互联网产品的服务端关于处理事务消息的套路 套路1：最终一致性消息模型该方案关键是要有个消息表。另外，一般会有个队列，而且我们一般都会假设这个MQ不丢消息。 基本思路如下  消息生产方  需要额外建一个消息表，并记录消息发送状态。消息表和业务数据要在一个事务里提交（有时实现时为了简单，可以只是增加一个字段。新增字段会跟业务强耦合）  消息消费方需要处理这个消息，并完成自">
-<meta name="keywords" content="java,mq,kafka">
+  <meta name="description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
+<meta name="keywords" content="Java,Tomcat">
 <meta property="og:type" content="article">
-<meta property="og:title" content="事务消息组件的套路">
-<meta property="og:url" content="https://blog.longyb.com/2019/01/23/transaction_mq/index.html">
+<meta property="og:title" content="Tomcat启动Creation of SecureRandom instance卡住解决">
+<meta property="og:url" content="https://blog.longyb.com/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
-<meta property="og:description" content="事务消息组件的套路本文介绍一些互联网产品的服务端关于处理事务消息的套路 套路1：最终一致性消息模型该方案关键是要有个消息表。另外，一般会有个队列，而且我们一般都会假设这个MQ不丢消息。 基本思路如下  消息生产方  需要额外建一个消息表，并记录消息发送状态。消息表和业务数据要在一个事务里提交（有时实现时为了简单，可以只是增加一个字段。新增字段会跟业务强耦合）  消息消费方需要处理这个消息，并完成自">
+<meta property="og:description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:image" content="https://sinacloud.net/longyb-myblog/non_tx_msg.jpg">
-<meta property="og:image" content="http://sinacloud.net/longyb-myblog/transactionMsg_coordinator.png">
-<meta property="og:image" content="http://sinacloud.net/longyb-myblog/matt_kafka_tx.png">
-<meta property="og:updated_time" content="2019-01-23T15:28:02.310Z">
+<meta property="og:updated_time" content="2019-05-17T13:38:48.305Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="事务消息组件的套路">
-<meta name="twitter:description" content="事务消息组件的套路本文介绍一些互联网产品的服务端关于处理事务消息的套路 套路1：最终一致性消息模型该方案关键是要有个消息表。另外，一般会有个队列，而且我们一般都会假设这个MQ不丢消息。 基本思路如下  消息生产方  需要额外建一个消息表，并记录消息发送状态。消息表和业务数据要在一个事务里提交（有时实现时为了简单，可以只是增加一个字段。新增字段会跟业务强耦合）  消息消费方需要处理这个消息，并完成自">
-<meta name="twitter:image" content="https://sinacloud.net/longyb-myblog/non_tx_msg.jpg">
+<meta name="twitter:title" content="Tomcat启动Creation of SecureRandom instance卡住解决">
+<meta name="twitter:description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
 
 
 
 
 
 
-  <link rel="canonical" href="https://blog.longyb.com/2019/01/23/transaction_mq/"/>
+  <link rel="canonical" href="https://blog.longyb.com/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/"/>
 
 
 
@@ -142,7 +138,7 @@
   };
 </script>
 
-  <title>事务消息组件的套路 | LongYuBo's Blog</title>
+  <title>Tomcat启动Creation of SecureRandom instance卡住解决 | LongYuBo's Blog</title>
   
 
 
@@ -307,7 +303,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/01/23/transaction_mq/">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="LongYuBo">
@@ -324,7 +320,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">事务消息组件的套路
+          <h1 class="post-title" itemprop="name headline">Tomcat启动Creation of SecureRandom instance卡住解决
               
             
           </h1>
@@ -349,7 +345,7 @@
                 
               
 
-              <time title="创建时间：2019-01-23 23:02:00 / 修改时间：23:28:02" itemprop="dateCreated datePublished" datetime="2019-01-23T23:02:00+08:00">2019-01-23</time>
+              <time title="创建时间：2019-05-17 21:34:06 / 修改时间：21:38:48" itemprop="dateCreated datePublished" datetime="2019-05-17T21:34:06+08:00">2019-05-17</time>
             
 
             
@@ -368,10 +364,10 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/01/23/transaction_mq/#comments" itemprop="discussionUrl">
+                <a href="/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/#comments" itemprop="discussionUrl">
                 
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/01/23/transaction_mq/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -407,74 +403,30 @@
       
 
       
-        <h2 id="事务消息组件的套路"><a href="#事务消息组件的套路" class="headerlink" title="事务消息组件的套路"></a>事务消息组件的套路</h2><p>本文介绍一些互联网产品的服务端关于处理事务消息的套路</p>
-<h2 id="套路1：最终一致性消息模型"><a href="#套路1：最终一致性消息模型" class="headerlink" title="套路1：最终一致性消息模型"></a>套路1：最终一致性消息模型</h2><p>该方案关键是要有个消息表。另外，一般会有个队列，而且我们一般都会假设这个MQ不丢消息。</p>
-<p>基本思路如下</p>
-<ul>
-<li>消息生产方</li>
-</ul>
-<p>需要额外建一个消息表，并记录消息发送状态。消息表和业务数据要在一个事务里提交（有时实现时为了简单，可以只是增加一个字段。新增字段会跟业务强耦合）</p>
-<ul>
-<li>消息消费方<br>需要处理这个消息，并完成自己的业务逻辑。</li>
-</ul>
-<p>如果本地事务处理成功，那发送给生产方一个confirm消息，表明已经处理成功了。</p>
-<p>如果处理失败，可以发送给生产方一个失败消息，或者记录本地表。以后重试。</p>
-<p>生产方定时扫描本地消息表，把还没处理完成的消息重新发送一遍。如果有其他的对账补账逻辑，这一步也可以省略。</p>
-<p>整体流程如下图所示：</p>
-<p><img src="https://sinacloud.net/longyb-myblog/non_tx_msg.jpg" alt=""></p>
-<p>对一致性要求不高的或者有其他兜底方案的场景（比如较为频繁的对账补账机制），我们就不需要关心消息的confirm等情况，只要扔给消息，就认为OK，一般也是可取的。</p>
-<p>但是这个方案存在一个小问题</p>
-<p>如果发送消息失败，发送方并不知道是消息中间件真的没有收到消息呢,还是消息已经收到了只是返回response的时候失败了</p>
-<ol>
-<li><p>如果是已经收到消息了，而发送端认为没有收到，执行update db的回滚操作。则会导致发送方事务回滚，接受方却把后续逻辑做掉了</p>
-</li>
-<li><p>把网络调用放在DB事务里面，可能会因为网络的延时，导致DB长事务，存在风险</p>
-</li>
-</ol>
-<h2 id="套路2：事务消息模型"><a href="#套路2：事务消息模型" class="headerlink" title="套路2：事务消息模型"></a>套路2：事务消息模型</h2><h3 id="国内常用方案"><a href="#国内常用方案" class="headerlink" title="国内常用方案"></a>国内常用方案</h3><p>事务消息与上面提到的最终一致性模型一致，只不过是把记录消息发送状态这一步在中间件内部做掉了，从而无需业务方针对每个业务自己手动实现。</p>
-<p>具体的实现如下图所示。<br><img src="http://sinacloud.net/longyb-myblog/transactionMsg_coordinator.png" alt=""></p>
-<p>现在的步骤如下：</p>
-<ol>
-<li><p>业务应用把要发送的消息给协调器</p>
-<p> 1.1 协调器在他自己的DB中记录下这条消息</p>
-<p> 1.2 协调器返回对应的msgid</p>
-</li>
-<li><p>业务应用自行本地事务更新DB</p>
-</li>
-<li><p>业务系统如果本地事务执行成功，告诉协调器这条消息Commit，如果本地事务执行失败，则rollback</p>
-<p> 3.1 协调器更新自己的数据库，标记消息已经Commit/Rollback</p>
-</li>
-<li><p>协调器对于成功submit的消息，开始往MQ进行投递，等待ack，如果一段时间没有收到ack，会继续投递该消息</p>
-</li>
-<li>MQ将消息投递给接收方，接收方执行事务更新DB</li>
-<li>接收方应用给协调器做ack，告诉这条消息消费成功.如果长时间没有收到ACK，协调器重投到MQ，这里需要接受方做幂等实现</li>
-<li>如果协调器没有收到Commit/rollback，则会询问业务应用消息的状态，是要Commit还是Rollback</li>
-</ol>
-<p>对于网易内部的TMC来说，1、3、7三步都是由dubbo实现的(7走的Dubbo的泛化调用)。</p>
-<p>阿里的Rocketmq则是做在了产品内部，不依赖外部实现。</p>
-<p><a href="https://www.cnblogs.com/hzmark/p/rocket_txn.html" target="_blank" rel="noopener">RocketMQ的实现细节见此</a></p>
-<p>对比而言，方案2的最大不一样就是把“扫描消息表”这个事情，不需要业务方做，消息中间件帮着做了。</p>
-<p>至于消息表，其实还是没有省掉。因为消息中间件要询问发送方，事物是否执行成功，还是需要一个“变相的本地消息表”或者说业务自己的业务表有对应的信息，记录事物执行状态。</p>
-<h3 id="KAFKA的事务消息实现方案"><a href="#KAFKA的事务消息实现方案" class="headerlink" title="KAFKA的事务消息实现方案"></a>KAFKA的事务消息实现方案</h3><p>Kafka的transaction最开始是给kafka steaming实现exactly once语义设计的，后面又有一些扩展。</p>
-<p>Kafka的实现方案（不考虑kafka streaming的情况下，kafka streaming对消费者有处理）对比上面是没有回查步骤的，同时消费者也需要业务代码来保证幂等。</p>
-<p>流程图如下：</p>
-<p><img src="http://sinacloud.net/longyb-myblog/matt_kafka_tx.png" alt=""><br>上图来自<a href="http://matt33.com/2018/11/04/kafka-transaction/" target="_blank" rel="noopener">matt的博客</a></p>
-<p>KAFKA的事务消息具体实现比较复杂，简单来说分为如下几个步骤：</p>
-<ol>
-<li>生产者像事务协调器注册自己的TransactionalID,这个ID需要保证每台生产者是唯一的。这时如果对应的TransactionalID的机器有没有结束的transaction，会直接被终止。</li>
-<li>beginTransaction是本地做的，对于服务端没有交互</li>
-<li>向协调器注册要发消息的partition（要解决跨Topic，跨Partition的事务,对应上图4.1a,协调器开始写ongoing的txLog到Transaction_Log的内部topic中）</li>
-<li>正常发送消息到对应的partition去</li>
-<li>调用commit/abord到协调器，协调器开始[两阶段提交]</li>
-<li>协调器写prepare消息到Transaction_Log，这时就算提交了。然后再会给发送到的partition后面补一个不可见的commit消息（主要是用来处理read committed），然后会在写一个commited到到Transaction_Log。到这里就算一个事务结束。</li>
-</ol>
-<p>由于这个方案没有引入一个唯一的消息ID(非kafka streaming 模式），且没有回查机制，对于方案1中的最后两个问题也是没有解决。</p>
-<p>Kafka自己的kafka streaming则是需要把消费源头的offset作为transaction的一部分（会写到到Transaction_Log里）提交给协调器来实现幂等。而对接一般的外部业务系统，则没有对应机制可以做这件事。</p>
-<p>下面是相关的资料:</p>
-<p><a href="https://www.confluent.io/blog/transactions-apache-kafka/" target="_blank" rel="noopener">confluent的简单介绍</a></p>
-<p><a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging#KIP-98-ExactlyOnceDeliveryandTransactionalMessaging-DataFlow" target="_blank" rel="noopener">原始KIP</a></p>
-<p><a href="http://matt33.com/2018/11/04/kafka-transaction/" target="_blank" rel="noopener">matt33的博客（中文）</a>写的很详细，推荐一看</p>
+        <h2 id="Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住"><a href="#Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住" class="headerlink" title="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住"></a>Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住</h2><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>起因是线上Tomcat的启动缓慢，看到日志里面有一行：<br>[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator [T:] Creation of SecureRandom instance for session ID generation using [SHA1PRNG] took [213,586] milliseconds.</p>
+<h3 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h3><p>简单google了一下，是Java的SecureRandom是<b><font color="red">同步</font></b>读的操作系统的/dev/random<br>（具体的这个配置是在JAVA_HOME/jre/lib/security/java.security这个文件里面的securerandom.source=file:/dev/random 这个配置项）<br>由于entropy pool(熵池)里面的值不够，所以卡住在读/dev/random上了，造成了启动缓慢</p>
+<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><pre><code>1. 根据tomcat官方文档给出的方式（https://wiki.apache.org/tomcat/HowTo/FasterStartUp），在jvm启动的时候加入-Djava.security.egd=file:/dev/./urandom即可
+2. 或者把JAVA_HOME/jre/lib/security/java.security里面的securerandom.source的值改为file:/dev/./urandom也可以
+</code></pre><p>上述方法二选一即可。</p>
+<h3 id="urandom是什么鬼"><a href="#urandom是什么鬼" class="headerlink" title="./urandom是什么鬼"></a>./urandom是什么鬼</h3><p>但是这里有个很奇怪的地方，为什么写法是file:/dev/./urandom，而不是file:/dev/urandom，我搜索了一下，换成file:/dev/urandom是不会生效的，读的还是file:/dev/random。这是jvm的一个bug，相关的记录</p>
+<p><a href="https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4705093" target="_blank" rel="noopener">4705093</a><br><a href="https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6202721" target="_blank" rel="noopener">6202721</a> </p>
+<pre><code>If java.security.egd or securerandom.source point to &quot;file:/dev/random&quot; or &quot;file:/dev/urandom&quot;, we will use NativeSeedGenerator, which calls super() which calls SeedGenerator.URLSeedGenerator(/dev/random). 
+(A nested class within SeedGenerator.)  The only things that changed in this bug was that urandom will also trigger use of this code path. 
+</code></pre><p>其实最后都call到同一个SeedGenerator.URLSeedGenerator(/dev/random)上面去了<br>所以才有了这个workaround用file:/dev/./urandom这个格式。</p>
+<p>但是这个问题在开发环境并不存在，为什么预发/线上会有？<br>因为我们的开发环境是redhat，线上是debian , 直接cat /dev/random就能发现开发环境能马上显示好几屏的随机数，而线上环境只有不到20个字符。具体/dev/random是啥见wikipedia：<a href="https://zh.wikipedia.org/wiki//dev/random" target="_blank" rel="noopener">/dev/random</a>. </p>
+<p>这里摘取其中的一段</p>
+<pre><code>随机数发生器有一个容纳噪声数据的熵池，在读取时，/dev/random设备会返回小于熵池噪声总数的随机字节。
+/dev/random可生成高随机性的公钥或一次性密码本。若熵池空了，对/dev/random的读操作将会被阻塞，直到收集到了足够的环境噪声为止。
+这样的设计使得/dev/random是真正的随机数发生器，提供了最大可能的随机数据熵，建议在需要生成高强度的密钥时使用。
 
+/dev/random的一个副本是/dev/urandom（“unblocked”，非阻塞的随机数发生器），它会重复使用熵池中的数据以产生伪随机数据。
+这表示对/dev/urandom的读取操作不会产生阻塞，但其输出的熵可能小于/dev/random的。
+它可以作为生成较低强度密码的伪随机数生成器，不建议用于生成高强度长期密码。
+
+/dev/random也允许写入，任何用户都可以向熵池中加入随机数据。
+即使写入非随机数据亦是无害的，因为只有管理员可以调用ioctl以增加熵池大小。
+Linux内核中当前熵的值和大小可以通过访问/proc/sys/kernel/random/文件夹中的文件得到
+</code></pre>
       
     </div>
 
@@ -494,11 +446,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/java/" rel="tag"># java</a>
+            <a href="/tags/Java/" rel="tag"># Java</a>
           
-            <a href="/tags/mq/" rel="tag"># mq</a>
-          
-            <a href="/tags/kafka/" rel="tag"># kafka</a>
+            <a href="/tags/Tomcat/" rel="tag"># Tomcat</a>
           
         </div>
       
@@ -511,8 +461,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/12/17/facebook_scale_memcache/" rel="next" title="论文笔记：Scaling Memcache at Facebook">
-                <i class="fa fa-chevron-left"></i> 论文笔记：Scaling Memcache at Facebook
+              <a href="/2019/04/22/cassandra_flush_memtable/" rel="next" title="Cassandra源码阅读(3)-Memtable Flush">
+                <i class="fa fa-chevron-left"></i> Cassandra源码阅读(3)-Memtable Flush
               </a>
             
           </div>
@@ -520,10 +470,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/02/18/cassandra_setup/" rel="prev" title="Cassandra源码阅读(1)-启动流程">
-                Cassandra源码阅读(1)-启动流程 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -711,7 +657,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#事务消息组件的套路"><span class="nav-number">1.</span> <span class="nav-text">事务消息组件的套路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#套路1：最终一致性消息模型"><span class="nav-number">2.</span> <span class="nav-text">套路1：最终一致性消息模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#套路2：事务消息模型"><span class="nav-number">3.</span> <span class="nav-text">套路2：事务消息模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#国内常用方案"><span class="nav-number">3.1.</span> <span class="nav-text">国内常用方案</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KAFKA的事务消息实现方案"><span class="nav-number">3.2.</span> <span class="nav-text">KAFKA的事务消息实现方案</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住"><span class="nav-number">1.</span> <span class="nav-text">Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#原因"><span class="nav-number">1.2.</span> <span class="nav-text">原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决方法"><span class="nav-number">1.3.</span> <span class="nav-text">解决方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#urandom是什么鬼"><span class="nav-number">1.4.</span> <span class="nav-text">./urandom是什么鬼</span></a></li></ol></li></ol></div>
             
 
           </div>
@@ -907,9 +853,9 @@
   
     <script type="text/javascript">
       var disqus_config = function () {
-        this.page.url = 'https://blog.longyb.com/2019/01/23/transaction_mq/';
-        this.page.identifier = '2019/01/23/transaction_mq/';
-        this.page.title = '事务消息组件的套路';
+        this.page.url = 'https://blog.longyb.com/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/';
+        this.page.identifier = '2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/';
+        this.page.title = 'Tomcat启动Creation of SecureRandom instance卡住解决';
         };
       function loadComments () {
         var d = document, s = d.createElement('script');
