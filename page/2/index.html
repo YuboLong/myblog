@@ -114,7 +114,7 @@
 <meta name="keywords" content="Java">
 <meta property="og:type" content="website">
 <meta property="og:title" content="LongYuBo&#39;s Blog">
-<meta property="og:url" content="https://blog.longyb.com/tags/论文笔记/index.html">
+<meta property="og:url" content="https://blog.longyb.com/page/2/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
 <meta property="og:description" content="Backend Developer">
 <meta property="og:locale" content="zh-CN">
@@ -127,7 +127,7 @@
 
 
 
-  <link rel="canonical" href="https://blog.longyb.com/tags/论文笔记/"/>
+  <link rel="canonical" href="https://blog.longyb.com/page/2/"/>
 
 
 
@@ -137,7 +137,7 @@
   };
 </script>
 
-  <title>标签: 论文笔记 | LongYuBo's Blog</title>
+  <title>LongYuBo's Blog</title>
   
 
 
@@ -184,7 +184,8 @@
     
   
 
-  <div class="container sidebar-position-right ">
+  <div class="container sidebar-position-right 
+  page-home">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -241,7 +242,7 @@
         
         
           
-          <li class="menu-item menu-item-tags menu-item-active">
+          <li class="menu-item menu-item-tags">
     <a href="/tags/" rel="section">
       <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />标签</a>
   </li>
@@ -282,77 +283,190 @@
           
             
 
-    
-    
-      
-      
-    
-      
-      
-    
-      
-      
-    
-      
-      
-    
-    
-
-  
-
-
           
           <div id="content" class="content">
             
+  <section id="posts" class="posts-expand">
+    
+      
+
+  
 
   
   
   
-  <div class="post-block tag">
 
-    <div id="posts" class="posts-collapse">
-      <div class="collection-title">
-        <h1>论文笔记<small>标签</small>
-        </h1>
-      </div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2018/07/01/Kafka_network_1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/01/Kafka_network_1/" itemprop="url">
+                  Kafka源码学习:网络通信层(1)
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2018-07-01 16:23:06" itemprop="dateCreated datePublished" datetime="2018-07-01T16:23:06+08:00">2018-07-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2018-10-02 14:15:05" itemprop="dateModified" datetime="2018-10-02T14:15:05+08:00">2018-10-02</time>
+              
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/07/01/Kafka_network_1/#comments" itemprop="discussionUrl">
+                
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/07/01/Kafka_network_1/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
 
       
         
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2018/12/17/facebook_scale_memcache/" itemprop="url">
-              
-                <span itemprop="name">论文笔记：Scaling Memcache at Facebook</span>
-              
+          
+          Kafka源码学习:网络通信层(1)因为工作过程中基本没有涉及到直接使用网络API编程的，所以借这次学习Kafka源码的机会，一起把Java NIO Api以及网络的编程模型套路一起学习一下。
+本文主要目的是学习Kafka如何使用NIO与客户端通信的:包括连接的建立，数据的读取，给客户端的应答。
+本
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2018/07/01/Kafka_network_1/#more" rel="contents">
+              阅读全文 &raquo;
             </a>
+          </div>
+          <!--/noindex-->
         
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2018-12-17T22:07:00+08:00"
-              content="2018-12-17" >
-          12-17
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
       
     </div>
 
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
   </div>
   
   
   
+  </article>
+
+
+    
+  </section>
 
   
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span>
+  </nav>
+
 
 
           </div>
