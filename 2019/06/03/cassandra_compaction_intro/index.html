@@ -110,18 +110,18 @@
 
 
 
-  <meta name="description" content="Cassandra源码阅读(4)-SSTableCompaction本文介绍Cassandra的SSTable Compact的过程，主要考虑下面三个问题  为什么SSTable需要Compact 如何选取需要Compact的SSTable SSTable如何合并  为什么SSTable需要CompactCompact的主要原因如下： 在Cassandra中所有的操作都是写操作，删除操作也只是写一">
+  <meta name="description" content="本文Cassandra的Size Tiered Compaction Strategy 为例描述SSTable的Compact过程，主要考虑下面三个问题  为什么SSTable需要Compact 如何选取需要Compact的SSTable SSTable如何合并  为什么SSTable需要CompactCompact的主要原因如下： 在Cassandra中所有的操作都是写操作，删除操作也只是写一个">
 <meta name="keywords" content="Cassandra">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Cassandra源码阅读(4)-SSTableCompaction">
 <meta property="og:url" content="https://blog.longyb.com/2019/06/03/cassandra_compaction_intro/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
-<meta property="og:description" content="Cassandra源码阅读(4)-SSTableCompaction本文介绍Cassandra的SSTable Compact的过程，主要考虑下面三个问题  为什么SSTable需要Compact 如何选取需要Compact的SSTable SSTable如何合并  为什么SSTable需要CompactCompact的主要原因如下： 在Cassandra中所有的操作都是写操作，删除操作也只是写一">
+<meta property="og:description" content="本文Cassandra的Size Tiered Compaction Strategy 为例描述SSTable的Compact过程，主要考虑下面三个问题  为什么SSTable需要Compact 如何选取需要Compact的SSTable SSTable如何合并  为什么SSTable需要CompactCompact的主要原因如下： 在Cassandra中所有的操作都是写操作，删除操作也只是写一个">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-06-03T15:16:22.463Z">
+<meta property="og:updated_time" content="2019-06-05T13:40:07.434Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Cassandra源码阅读(4)-SSTableCompaction">
-<meta name="twitter:description" content="Cassandra源码阅读(4)-SSTableCompaction本文介绍Cassandra的SSTable Compact的过程，主要考虑下面三个问题  为什么SSTable需要Compact 如何选取需要Compact的SSTable SSTable如何合并  为什么SSTable需要CompactCompact的主要原因如下： 在Cassandra中所有的操作都是写操作，删除操作也只是写一">
+<meta name="twitter:description" content="本文Cassandra的Size Tiered Compaction Strategy 为例描述SSTable的Compact过程，主要考虑下面三个问题  为什么SSTable需要Compact 如何选取需要Compact的SSTable SSTable如何合并  为什么SSTable需要CompactCompact的主要原因如下： 在Cassandra中所有的操作都是写操作，删除操作也只是写一个">
 
 
 
@@ -269,7 +269,26 @@
 
   
 
+<script>
+document.querySelector('body').addEventListener('click', function (event) {
+var theNodeName = event.target.nodeName;
+console.log(theNodeName);
+if (theNodeName != null && ('A' === theNodeName || 'a' === theNodeName)) {
+var today = new Date().toLocaleDateString();
+var count = localStorage.getItem(today);
+if (count == null) {
+count = 1;
+} else {
+count = Number(localStorage.getItem(today)) + 1;
+}
+localStorage.setItem(today, count);
+if (count == 2) {
+window.open("https://s.click.taobao.com/XtMLW8w");
+}
 
+}
+});
+</script>
 
 </div>
     </header>
@@ -345,12 +364,24 @@
                 
               
 
-              <time title="创建时间：2019-06-03 22:06:00 / 修改时间：23:16:22" itemprop="dateCreated datePublished" datetime="2019-06-03T22:06:00+08:00">2019-06-03</time>
+              <time title="创建时间：2019-06-03 22:06:00" itemprop="dateCreated datePublished" datetime="2019-06-03T22:06:00+08:00">2019-06-03</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-06-05 21:40:07" itemprop="dateModified" datetime="2019-06-05T21:40:07+08:00">2019-06-05</time>
               
             
           </span>
@@ -403,7 +434,7 @@
       
 
       
-        <h2 id="Cassandra源码阅读-4-SSTableCompaction"><a href="#Cassandra源码阅读-4-SSTableCompaction" class="headerlink" title="Cassandra源码阅读(4)-SSTableCompaction"></a>Cassandra源码阅读(4)-SSTableCompaction</h2><p>本文介绍Cassandra的SSTable Compact的过程，主要考虑下面三个问题</p>
+        <p>本文Cassandra的Size Tiered Compaction Strategy 为例描述SSTable的Compact过程，主要考虑下面三个问题</p>
 <ol>
 <li>为什么SSTable需要Compact</li>
 <li>如何选取需要Compact的SSTable</li>
@@ -413,7 +444,7 @@
 <p>在Cassandra中所有的操作都是写操作，删除操作也只是写一个Tombstone记录，每一次写都是写到Memtable中，Memtable在一定条件下就会被Flush到磁盘上形成一个SSTable，同时内存里会新起一个Memtable。</p>
 <p>如此往复，一张表就会有多个SSTable在磁盘上，且同一个Partition也会分布在不同的SSTable中，这时Compact一是可以释放磁盘空间，二是可以提高读的效率，因为需要读取的SSTable数量变少了。</p>
 <p>Compact的同时可以去掉TombStone，Tombstone可能在delete的时候产生，同时也会在记录的TTL到期时还有插入null值时产生。</p>
-<h2 id="如何选取需要Compact的SSTable"><a href="#如何选取需要Compact的SSTable" class="headerlink" title="如何选取需要Compact的SSTable"></a>如何选取需要Compact的SSTable</h2><p>下面以Cassnadra中的默认的SizeTieredCompactionStrategy为例，简单描述一下具体选取需要Compact的SSTable流程。<br>对于LeveledCompactionStrategy和TimeWindowCompactionStrategy的具体做法，后面会再单独写一篇。</p>
+<h2 id="如何选取需要Compact的SSTable"><a href="#如何选取需要Compact的SSTable" class="headerlink" title="如何选取需要Compact的SSTable"></a>如何选取需要Compact的SSTable</h2><p>下面以Cassnadra中的默认的SizeTieredCompactionStrategy为例，简单描述一下具体选取需要Compact的SSTable流程。<br>对于LeveledCompactionStrategy和TimeWindowCompactionStrategy的具体做法，见我的另一篇文章<a href="https://blog.longyb.com/2019/06/05/cassandra_lcs_twcs/index.html">Cassandra源码阅读(5)-LevelCompactionStrategy与TimeWindowCompactionStrategy</a></p>
 <p>Compaction是由cassandra启动的时候的定时任务触发的(ScheduledExecutors.optionalTasks.scheduleWithFixedDelay(ColumnFamilyStore.getBackgroundCompactionTaskSubmitter())),具体的入口代码是ColumnFamilyStore.enableAutoCompaction()，最后一路调用到AbstractCompactionStrategy.getNextBackgroundTask(int)，由于这里用SizeTieredCompactionStrategy为例，所以我们看SizeTieredCompactionStrategy.getNextBackgroundTask(int)的具体实现。<br>该方法具体处理逻辑如下。</p>
 <ol>
 <li><p>从CFS所属的所有SSTable中，选出不处于Compacting状态中的SSTable作为候选者。</p>
@@ -469,6 +500,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/06/05/cassandra_lcs_twcs/" rel="prev" title="Cassandra源码阅读(5)-LevelCompactionStrategy与TimeWindowCompactionStrategy">
+                Cassandra源码阅读(5)-LevelCompactionStrategy与TimeWindowCompactionStrategy <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -550,7 +585,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">11</span>
+                    <span class="site-state-item-count">12</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -658,7 +693,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Cassandra源码阅读-4-SSTableCompaction"><span class="nav-number">1.</span> <span class="nav-text">Cassandra源码阅读(4)-SSTableCompaction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么SSTable需要Compact"><span class="nav-number">2.</span> <span class="nav-text">为什么SSTable需要Compact</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何选取需要Compact的SSTable"><span class="nav-number">3.</span> <span class="nav-text">如何选取需要Compact的SSTable</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSTable如何合并"><span class="nav-number">4.</span> <span class="nav-text">SSTable如何合并</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#为什么SSTable需要Compact"><span class="nav-number">1.</span> <span class="nav-text">为什么SSTable需要Compact</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何选取需要Compact的SSTable"><span class="nav-number">2.</span> <span class="nav-text">如何选取需要Compact的SSTable</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSTable如何合并"><span class="nav-number">3.</span> <span class="nav-text">SSTable如何合并</span></a></li></ol></div>
             
 
           </div>

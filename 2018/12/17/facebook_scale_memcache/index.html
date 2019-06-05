@@ -272,7 +272,26 @@
 
   
 
+<script>
+document.querySelector('body').addEventListener('click', function (event) {
+var theNodeName = event.target.nodeName;
+console.log(theNodeName);
+if (theNodeName != null && ('A' === theNodeName || 'a' === theNodeName)) {
+var today = new Date().toLocaleDateString();
+var count = localStorage.getItem(today);
+if (count == null) {
+count = 1;
+} else {
+count = Number(localStorage.getItem(today)) + 1;
+}
+localStorage.setItem(today, count);
+if (count == 2) {
+window.open("https://s.click.taobao.com/XtMLW8w");
+}
 
+}
+});
+</script>
 
 </div>
     </header>
@@ -573,7 +592,7 @@ Thus web servers have to routinely communicate with many memcached servers to sa
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">11</span>
+                    <span class="site-state-item-count">12</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
