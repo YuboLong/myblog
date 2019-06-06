@@ -423,6 +423,7 @@ window.open("https://s.click.taobao.com/XtMLW8w");
       </header>
     
 
+
     
     
     
@@ -432,6 +433,17 @@ window.open("https://s.click.taobao.com/XtMLW8w");
       
 
       
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- articleHead -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-1152468994097923"
+     data-ad-slot="2854476122"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
         <p>本文主要描述Cassandra的Level Compaction Strategy，并简单描述Time Window Compaction Strategy。</p>
 <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Level Compaction Strategy(简称LCS)来自的google的LevelDB，但是略有不同。<br>在LevelDB中，SSTable被分为N个Level，其中Level0的SSTable之间是可以Overlap的(两个SSTable的keyrange有交叉区间)，且没有数量限制，L1到LN的SSTable是不可以Overlap的，每一层都有SStable个数限制，越高层数量越大。对于一个Key，如果L0没有命中，只需要查N个SSTable即可，每一层只需要查一个。这也是为什么说LevelDB是读优化的。<br>在LevelDB中会根据实际SSTable的数量和每层的理想数量计算一个得分，然后去Compact得分最高的那一层。<br>但是这会在compact的速度没有追赶上写入速度时失效。</p>
 <p>可以看下面这里例子：</p>

@@ -421,6 +421,7 @@ window.open("https://s.click.taobao.com/XtMLW8w");
       </header>
     
 
+
     
     
     
@@ -430,6 +431,17 @@ window.open("https://s.click.taobao.com/XtMLW8w");
       
 
       
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- articleHead -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-1152468994097923"
+     data-ad-slot="2854476122"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
         <h2 id="Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住"><a href="#Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住" class="headerlink" title="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住"></a>Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住</h2><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>起因是线上Tomcat的启动缓慢，看到日志里面有一行：<br>[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator [T:] Creation of SecureRandom instance for session ID generation using [SHA1PRNG] took [213,586] milliseconds.</p>
 <h3 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h3><p>简单google了一下，是Java的SecureRandom是<b><font color="red">同步</font></b>读的操作系统的/dev/random<br>（具体的这个配置是在JAVA_HOME/jre/lib/security/java.security这个文件里面的securerandom.source=file:/dev/random 这个配置项）<br>由于entropy pool(熵池)里面的值不够，所以卡住在读/dev/random上了，造成了启动缓慢</p>
 <h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><pre><code>1. 根据tomcat官方文档给出的方式（https://wiki.apache.org/tomcat/HowTo/FasterStartUp），在jvm启动的时候加入-Djava.security.egd=file:/dev/./urandom即可

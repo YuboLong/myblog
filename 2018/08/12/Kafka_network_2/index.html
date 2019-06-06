@@ -433,6 +433,7 @@ window.open("https://s.click.taobao.com/XtMLW8w");
       </header>
     
 
+
     
     
     
@@ -442,6 +443,17 @@ window.open("https://s.click.taobao.com/XtMLW8w");
       
 
       
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- articleHead -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-1152468994097923"
+     data-ad-slot="2854476122"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
         <h2 id="Kafka源码学习-网络通信层-2"><a href="#Kafka源码学习-网络通信层-2" class="headerlink" title="Kafka源码学习:网络通信层(2)"></a>Kafka源码学习:网络通信层(2)</h2><p>上一篇里面讲了Kafka的服务端是如何收发请求的，这一篇主要学习一下网络层收到的数据是如何跟业务逻辑层打交道的</p>
 <p>上篇文章讲到了processCompletedReceives方法里面把completedReceives队列里面的NetworkReceive拿出来组成了RequestChannel.Session对象，然后把这个Session对象放到了RequestChannel.Request对象里面。<br>其中Session由一个principal和一个远端地址构成</p>
 <p>Request则是由之前读到的请求的payload（NetworkReceive.payload）和当前的processorID，connectionId等信息组成，还有header:RequestHeader跟body:AbstractRequest两个成员。使用payload构造header和body。<br>请求头里面包含了api_key,api_version等信息。</p>
