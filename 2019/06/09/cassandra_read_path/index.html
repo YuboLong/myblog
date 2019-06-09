@@ -110,24 +110,25 @@
 
 
 
-  <meta name="description" content="Backend Developer">
-<meta name="keywords" content="Java">
-<meta property="og:type" content="website">
-<meta property="og:title" content="LongYuBo&#39;s Blog">
-<meta property="og:url" content="https://blog.longyb.com/archives/2018/index.html">
+  <meta name="description" content="本文主要描述Cassandra的数据读取流程,包括节点的选定以及选定以后如何从Memtable和SSTable读取数据的过程. 节点的选定流程主入口在SelectStatmemt.execute(NormalPager…)这里，最终调用到storageProxy.read上面。这里只讨论ConsistencyLevel不为serial的情况，且指定partitionKey没有aggressive的">
+<meta name="keywords" content="Cassandra">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cassandra源码阅读(6)-数据读取流程">
+<meta property="og:url" content="https://blog.longyb.com/2019/06/09/cassandra_read_path/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
-<meta property="og:description" content="Backend Developer">
+<meta property="og:description" content="本文主要描述Cassandra的数据读取流程,包括节点的选定以及选定以后如何从Memtable和SSTable读取数据的过程. 节点的选定流程主入口在SelectStatmemt.execute(NormalPager…)这里，最终调用到storageProxy.read上面。这里只讨论ConsistencyLevel不为serial的情况，且指定partitionKey没有aggressive的">
 <meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-06-09T14:15:46.271Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="LongYuBo&#39;s Blog">
-<meta name="twitter:description" content="Backend Developer">
+<meta name="twitter:title" content="Cassandra源码阅读(6)-数据读取流程">
+<meta name="twitter:description" content="本文主要描述Cassandra的数据读取流程,包括节点的选定以及选定以后如何从Memtable和SSTable读取数据的过程. 节点的选定流程主入口在SelectStatmemt.execute(NormalPager…)这里，最终调用到storageProxy.read上面。这里只讨论ConsistencyLevel不为serial的情况，且指定partitionKey没有aggressive的">
 
 
 
 
 
 
-  <link rel="canonical" href="https://blog.longyb.com/archives/2018/"/>
+  <link rel="canonical" href="https://blog.longyb.com/2019/06/09/cassandra_read_path/"/>
 
 
 
@@ -137,7 +138,7 @@
   };
 </script>
 
-  <title>归档 | LongYuBo's Blog</title>
+  <title>Cassandra源码阅读(6)-数据读取流程 | LongYuBo's Blog</title>
   
 
 
@@ -184,7 +185,7 @@
     
   
 
-  <div class="container sidebar-position-right page-archive">
+  <div class="container sidebar-position-right page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -249,7 +250,7 @@
         
         
           
-          <li class="menu-item menu-item-archives menu-item-active">
+          <li class="menu-item menu-item-archives">
     <a href="/archives/" rel="section">
       <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />归档</a>
   </li>
@@ -309,251 +310,254 @@ window.open("https://s.click.taobao.com/XzFlP8w");
           
             
 
-    
-    
-      
-      
-    
-      
-      
-    
-      
-      
-    
-      
-      
-    
-    
-
-  
-
-
           
           <div id="content" class="content">
             
 
-  
-  
-  
-  <div class="post-block archive">
-    <div id="posts" class="posts-collapse">
-      <span class="archive-move-on"></span>
+  <div id="posts" class="posts-expand">
+    
 
-      
-      <span class="archive-page-counter">
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/06/09/cassandra_read_path/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
         
         
+          <h1 class="post-title" itemprop="name headline">Cassandra源码阅读(6)-数据读取流程
+              
+            
+          </h1>
         
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-06-09 22:08:00 / 修改时间：22:15:46" itemprop="dateCreated datePublished" datetime="2019-06-09T22:08:00+08:00">2019-06-09</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
           
-        
-        嗯..! 目前共计 13 篇日志。 继续努力。
-      </span>
-      
 
-      
-
-        
-        
-        
-
-        
           
-          <div class="collection-title">
-            <h1 class="archive-year" id="archive-year-2018">2018</h1>
-          </div>
-        
-        
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/06/09/cassandra_read_path/#comments" itemprop="discussionUrl">
+                
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/06/09/cassandra_read_path/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
 
-        
+          
+          
 
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+          
+            <span class="post-meta-divider">|</span>
+            <span class="post-meta-item-icon"
+            >
+            <i class="fa fa-eye"></i>
+             阅读次数： 
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
 
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2018/12/17/facebook_scale_memcache/" itemprop="url">
-              
-                <span itemprop="name">论文笔记：Scaling Memcache at Facebook</span>
-              
-            </a>
-        
-      </h2>
+          
 
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2018-12-17T22:07:00+08:00"
-              content="2018-12-17" >
-          12-17
-        </time>
-      </div>
+          
 
-    </header>
-  </article>
-
-
-
-      
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2018/10/12/cardinality_estimation/" itemprop="url">
-              
-                <span itemprop="name">基数估计算法简介</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2018-10-12T21:40:00+08:00"
-              content="2018-10-12" >
-          10-12
-        </time>
-      </div>
-
-    </header>
-  </article>
+        </div>
+      </header>
+    
 
 
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2018/10/04/Zgc_Introduction/" itemprop="url">
-              
-                <span itemprop="name">JDK 11 ZGC简介</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2018-10-04T10:51:00+08:00"
-              content="2018-10-04" >
-          10-04
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
       
 
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2018/08/12/Kafka_network_2/" itemprop="url">
-              
-                <span itemprop="name">Kafka源码学习:网络通信层(2)</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2018-08-12T15:07:35+08:00"
-              content="2018-08-12" >
-          08-12
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
+      
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- articleHead -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-1152468994097923"
+     data-ad-slot="2854476122"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+        <p>本文主要描述Cassandra的数据读取流程,包括节点的选定以及选定以后如何从Memtable和SSTable读取数据的过程.</p>
+<h2 id="节点的选定流程"><a href="#节点的选定流程" class="headerlink" title="节点的选定流程"></a>节点的选定流程</h2><p>主入口在SelectStatmemt.execute(NormalPager…)这里，最终调用到storageProxy.read上面。这里只讨论ConsistencyLevel不为serial的情况，且指定partitionKey没有aggressive的读取过程，在CQL中查询多个partitionKey的话，Cassandra会按照单个key逐个异步向对应机器查询，然后同步等待并返回结果。</p>
+<h3 id="整体思路"><a href="#整体思路" class="headerlink" title="整体思路"></a>整体思路</h3><p>整体读过程的思路如下：</p>
+<ol>
+<li><p>按照响应时间的快慢从snitch中获取副本节点的位置，snitch是cassandra中负责节点位置的组件。</p>
+</li>
+<li><p>按照partitionKey发送请求到最近的副本，在下列情况中，同时发送摘要请求到：<br> 2.1 如果打开了readrepair，发送到所有副本<br> 2.2 最近的R-1个副本，R是ConsistencyLevel指定的个数</p>
+</li>
+<li><p>等待从R个副本的返回</p>
+</li>
+<li><p>如果摘要与读取数据的摘要一致就返回，不一致就从所有副本中读数据并开始ReadRepair</p>
+</li>
+</ol>
+<h3 id="代码细节"><a href="#代码细节" class="headerlink" title="代码细节"></a>代码细节</h3><ol>
+<li><p>按照查询的key获取对应的所有副本节点</p>
+</li>
+<li><p>生成一个随机数，如果大于配置的readRepairChance就为此次查询开启一个全局的readrepair(readRepairDecision.GLOBAL),否则就不开启(readRepairDecision.NONE)</p>
+</li>
+<li><p>根据2的readRepairDecision来决定查询的副本，如果是NONE的话就只要ConsistencyLevel中指定的个数，如果是GLOBAL就对应该key的全部副本节点</p>
+</li>
+<li><p>根据3中的结果，第一个节点为数据请求(DataRequest),剩下的为摘要请求(DigestRequest)</p>
+</li>
+<li><p>向对应的节点发出请求，并等待回应。回应之后检查返回的数据的摘要是否和摘要请求返回的摘要相同（摘要请求之间也check），如果相同则返回数据给客户端，如果不相同就开始ReadRepair。</p>
+</li>
+</ol>
+<h2 id="Memtable和SSTable读取数据"><a href="#Memtable和SSTable读取数据" class="headerlink" title="Memtable和SSTable读取数据"></a>Memtable和SSTable读取数据</h2><p>上面介绍的步骤2发的是一个<br>MessageOut&lt;ReadCommand&gt;,对应的节点收到请求之后由ReadCommandVerbHandler来处理。</p>
+<p>下面介绍节点收到请求之后的处理逻辑，这里以单partition查询为例，ReadCommandVerbHandler最后调用到singlePartitionReadCommand.queryStorage方法。</p>
+<ol>
+<li><p>如果被查询的表开启了cache，就先查cache，如果cache中的数据能够满足这次查询就直接返回，否则就执行queryMemtableAndDiskInternal方法</p>
+</li>
+<li><p>queryMemtableAndDiskInternal简单来说就是把memtable先从memtable里面读，再从sstable里面读，最后把读到的结果合并成最终的结果。<br>查询Memtable非常简单就是对应Memtable.partitions.get(Key).( Memtable的整体数据结构可以看 <a href="https://blog.longyb.com/2019/03/03/cassandra_write_path/">Cassandra源码阅读(2)-写流程解析</a> )</p>
+</li>
+<li><p>按照partition落到对应SSTable所持有key的区间，确定候选的sstable（内部实现是把所有的SSTable所持有key的区间构造一个intervalTree来查找这个key落在哪些SSTable里）。这一步还不能确定这些SSTable一定持有这个partitionKey。</p>
+</li>
+<li><p>对3返回的sstable排序，按照maxtimestamp倒排，也就是最新的排前面。逐一遍历这些SSTable，根据下面条件进一步缩小要查询的SSTable</p>
+<p> 4.1 如果查询中有static column或者<br> 4.2 如果查询的clustering key在对应SSTable持有的区间中<br> 4.3 如果有partitionKey级别的delete，则记下对应的时间。后续遍历SSTable的maxTimeStamp，如果小于这个时间就停止遍历</p>
+</li>
+<li><p>根据4选出的SSSTable加上partitionKey构建一个迭代器返回。上层代码通过使用该迭代器来获取数据，对应的数据merge由该迭代器处理.(多个SSTable上的iterator用unfilteredRowMergeIterator把他们包起来,对于单个SSTable内部定位具体的文件position的时候，会用sstable的bloom filter过一下看是否查询的key在里面，如果不在就返回一个NoRowIterator).</p>
+</li>
+</ol>
 
       
-
-        
-        
-        
-
-        
-        
-
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2018/07/01/Kafka_network_1/" itemprop="url">
-              
-                <span itemprop="name">Kafka源码学习:网络通信层(1)</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated"
-              datetime="2018-07-01T16:23:06+08:00"
-              content="2018-07-01" >
-          07-01
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-
-      
-
     </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Cassandra/" rel="tag"># Cassandra</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/06/05/cassandra_lcs_twcs/" rel="next" title="Cassandra源码阅读(5)-LevelCompactionStrategy与TimeWindowCompactionStrategy">
+                <i class="fa fa-chevron-left"></i> Cassandra源码阅读(5)-LevelCompactionStrategy与TimeWindowCompactionStrategy
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
   </div>
   
   
   
+  </article>
 
-  
 
+  </div>
 
 
           </div>
           
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
 
         </div>
         
@@ -576,8 +580,17 @@ window.open("https://s.click.taobao.com/XzFlP8w");
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -690,6 +703,22 @@ window.open("https://s.click.taobao.com/XzFlP8w");
 
   
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#节点的选定流程"><span class="nav-number">1.</span> <span class="nav-text">节点的选定流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#整体思路"><span class="nav-number">1.1.</span> <span class="nav-text">整体思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码细节"><span class="nav-number">1.2.</span> <span class="nav-text">代码细节</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Memtable和SSTable读取数据"><span class="nav-number">2.</span> <span class="nav-text">Memtable和SSTable读取数据</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -882,6 +911,10 @@ window.open("https://s.click.taobao.com/XzFlP8w");
 
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.2"></script>
+
+
 
   
 
@@ -896,6 +929,23 @@ window.open("https://s.click.taobao.com/XzFlP8w");
     <script id="dsq-count-scr" src="https://longyb.disqus.com/count.js" async></script>
   
 
+  
+    <script type="text/javascript">
+      var disqus_config = function () {
+        this.page.url = 'https://blog.longyb.com/2019/06/09/cassandra_read_path/';
+        this.page.identifier = '2019/06/09/cassandra_read_path/';
+        this.page.title = 'Cassandra源码阅读(6)-数据读取流程';
+        };
+      function loadComments () {
+        var d = document, s = d.createElement('script');
+        s.src = 'https://longyb.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      }
+      
+        loadComments();
+      
+    </script>
   
 
 
