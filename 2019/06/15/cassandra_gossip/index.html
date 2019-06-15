@@ -110,25 +110,27 @@
 
 
 
-  <meta name="description" content="Cassandra源码阅读(3)-Memtable Flush本文介绍Cassandra的memtable flush到sstable的过程,重点关注下面两个问题  什么时候memtable会被flush到sstable 如果刷到sstable  何时触发 在Memtable初始化的时候，里面有一个memtable_pool，这个pool初始化的时候有一个cleaner参数，用的是ColumnFa">
-<meta name="keywords" content="Cassandra">
+  <meta name="description" content="本文介绍Gossip协议在Cassandra中的实现细节 什么是Gossip协议Gossip是分布式系统中被广泛使用的协议，其主要用于实现分布式节点或者进程之间的信息交换。Gossip协议利用一种随机的方式将信息散播到整个网络中。正如Gossip本身的含义一样，Gossip协议的工作流程即类似于绯闻的传播，或者流行病的传播。更详细的信息可以查看维基百科页面Gossip_protocol Cassa">
+<meta name="keywords" content="Cassandra,Gossip">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Cassandra源码阅读(3)-Memtable Flush">
-<meta property="og:url" content="https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/index.html">
+<meta property="og:title" content="Cassandra源码阅读(5)-Gossip协议">
+<meta property="og:url" content="https://blog.longyb.com/2019/06/15/cassandra_gossip/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
-<meta property="og:description" content="Cassandra源码阅读(3)-Memtable Flush本文介绍Cassandra的memtable flush到sstable的过程,重点关注下面两个问题  什么时候memtable会被flush到sstable 如果刷到sstable  何时触发 在Memtable初始化的时候，里面有一个memtable_pool，这个pool初始化的时候有一个cleaner参数，用的是ColumnFa">
+<meta property="og:description" content="本文介绍Gossip协议在Cassandra中的实现细节 什么是Gossip协议Gossip是分布式系统中被广泛使用的协议，其主要用于实现分布式节点或者进程之间的信息交换。Gossip协议利用一种随机的方式将信息散播到整个网络中。正如Gossip本身的含义一样，Gossip协议的工作流程即类似于绯闻的传播，或者流行病的传播。更详细的信息可以查看维基百科页面Gossip_protocol Cassa">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-04-22T13:54:47.118Z">
+<meta property="og:image" content="https://sinacloud.net/longyb-myblog/cassandra/cassandra_gossip.jpg">
+<meta property="og:updated_time" content="2019-06-15T05:35:25.676Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Cassandra源码阅读(3)-Memtable Flush">
-<meta name="twitter:description" content="Cassandra源码阅读(3)-Memtable Flush本文介绍Cassandra的memtable flush到sstable的过程,重点关注下面两个问题  什么时候memtable会被flush到sstable 如果刷到sstable  何时触发 在Memtable初始化的时候，里面有一个memtable_pool，这个pool初始化的时候有一个cleaner参数，用的是ColumnFa">
+<meta name="twitter:title" content="Cassandra源码阅读(5)-Gossip协议">
+<meta name="twitter:description" content="本文介绍Gossip协议在Cassandra中的实现细节 什么是Gossip协议Gossip是分布式系统中被广泛使用的协议，其主要用于实现分布式节点或者进程之间的信息交换。Gossip协议利用一种随机的方式将信息散播到整个网络中。正如Gossip本身的含义一样，Gossip协议的工作流程即类似于绯闻的传播，或者流行病的传播。更详细的信息可以查看维基百科页面Gossip_protocol Cassa">
+<meta name="twitter:image" content="https://sinacloud.net/longyb-myblog/cassandra/cassandra_gossip.jpg">
 
 
 
 
 
 
-  <link rel="canonical" href="https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/"/>
+  <link rel="canonical" href="https://blog.longyb.com/2019/06/15/cassandra_gossip/"/>
 
 
 
@@ -138,7 +140,7 @@
   };
 </script>
 
-  <title>Cassandra源码阅读(3)-Memtable Flush | LongYuBo's Blog</title>
+  <title>Cassandra源码阅读(5)-Gossip协议 | LongYuBo's Blog</title>
   
 
 
@@ -330,7 +332,7 @@ window.open("https://s.click.taobao.com/XzFlP8w");
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/06/15/cassandra_gossip/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="LongYuBo">
@@ -347,7 +349,7 @@ window.open("https://s.click.taobao.com/XzFlP8w");
 
         
         
-          <h1 class="post-title" itemprop="name headline">Cassandra源码阅读(3)-Memtable Flush
+          <h1 class="post-title" itemprop="name headline">Cassandra源码阅读(5)-Gossip协议
               
             
           </h1>
@@ -372,7 +374,7 @@ window.open("https://s.click.taobao.com/XzFlP8w");
                 
               
 
-              <time title="创建时间：2019-04-22 21:52:00 / 修改时间：21:54:47" itemprop="dateCreated datePublished" datetime="2019-04-22T21:52:00+08:00">2019-04-22</time>
+              <time title="创建时间：2019-06-15 11:27:00 / 修改时间：13:35:25" itemprop="dateCreated datePublished" datetime="2019-06-15T11:27:00+08:00">2019-06-15</time>
             
 
             
@@ -391,10 +393,10 @@ window.open("https://s.click.taobao.com/XzFlP8w");
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/04/22/cassandra_flush_memtable/#comments" itemprop="discussionUrl">
+                <a href="/2019/06/15/cassandra_gossip/#comments" itemprop="discussionUrl">
                 
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/04/22/cassandra_flush_memtable/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2019/06/15/cassandra_gossip/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -442,29 +444,41 @@ window.open("https://s.click.taobao.com/XzFlP8w");
 <script>
      (adsbygoogle = window.adsbygoogle || []).push({});
 </script>
-        <h1 id="Cassandra源码阅读-3-Memtable-Flush"><a href="#Cassandra源码阅读-3-Memtable-Flush" class="headerlink" title="Cassandra源码阅读(3)-Memtable Flush"></a>Cassandra源码阅读(3)-Memtable Flush</h1><p>本文介绍Cassandra的memtable flush到sstable的过程,重点关注下面两个问题</p>
+        <p>本文介绍Gossip协议在Cassandra中的实现细节</p>
+<h2 id="什么是Gossip协议"><a href="#什么是Gossip协议" class="headerlink" title="什么是Gossip协议"></a>什么是Gossip协议</h2><p>Gossip是分布式系统中被广泛使用的协议，其主要用于实现分布式节点或者进程之间的信息交换。Gossip协议利用一种随机的方式将信息散播到整个网络中。正如Gossip本身的含义一样，Gossip协议的工作流程即类似于绯闻的传播，或者流行病的传播。<br>更详细的信息可以查看维基百科页面<a href="https://en.wikipedia.org/wiki/Gossip_protocol" target="_blank" rel="noopener">Gossip_protocol</a></p>
+<h2 id="Cassandra中的实现"><a href="#Cassandra中的实现" class="headerlink" title="Cassandra中的实现"></a>Cassandra中的实现</h2><p>在cassandra中gossip相关的处理集中于Gossiper这个类中。发起gossip的方法在Gossiper.gossipTask.run方法中，他是一个runnable，在上层被一个定时任务每秒钟执行一次</p>
+<h3 id="节点状态的数据结构"><a href="#节点状态的数据结构" class="headerlink" title="节点状态的数据结构"></a>节点状态的数据结构</h3><p>Gossiper.endpointStateMap&lt;InetAddress,EndPointState&gt;保存了当前节点所知道的整个集群的状态，key就是对应节点的IP地址，value是EndPointState。</p>
+<p>EndPointState由两部分组成:HeartBeatState和ApplicationState。</p>
+<p>HeartBeatState里面有两个成员，generation和version。generation可以理解成当前集群状态大的版本号，version是小版本号，均从0开始。</p>
+<p>ApplicationState实际上是一个Map&lt;ApplicationState,VersionedValue&gt;,里面存放着多种应用信息和该信息对应的版本。ApplicationState是一个枚举.</p>
+<p>Cassandra中的Gossip协议分3个阶段。SYN,ACK,ACK2。以A向B发送gossip消息来为例：A发送SYN消息给B，B收到SYN消息之后回复ACK消息，A收到来自B的ACK消息之后再回复ACK2消息给B，完成一次完整的消息交换。</p>
+<p>下面描述每一个阶段的具体实现细节</p>
+<h3 id="SYN"><a href="#SYN" class="headerlink" title="SYN"></a>SYN</h3><ol>
+<li>更新本地节点的HeartBeatState.version,把它加1.</li>
+<li>构造SYN消息。SYN消息包含一个List<gossipdigest>和集群名字还有集群的分片方式。GossipDigest是一个节点信息的摘要，包含3个字段：节点的地址(InetAddress),Generation(就是heartbeatstate里面的generation),maxVersion（heartBeat的version和applicationState中的versionedValue取最大值)<br>构造SYN消息的具体步骤就是把endpointStateMap中的所有endpointState取出来构造一个List<gossipdigest></gossipdigest></gossipdigest></li>
+<li>从活着的节点中(Gossiper.liveEndPoints)中随机选一个，所谓发送对象，并发送SYN消息。如果liveEndPoints为空，则什么也不做。</li>
+<li>尝试给无法到达的节点发送SYN消息，具体做法是生成一个随机数rnd,如果rnd &lt; 不可达节点数/(存活节点数+1),就在不可达节点中随机选一个发送SYN消息。</li>
+<li>如果第3步没有发出任何消息，或者活着的节点数 &lt; 种子节点数 ， 那么给种子节点发消息，算法类似第4步， rnd &lt; 种子节点数/(存活节点+不可达节点)</li>
+</ol>
+<h3 id="ACK"><a href="#ACK" class="headerlink" title="ACK"></a>ACK</h3><p>B收到A的SYN之后，回复ACK消息给A，具体做法如下：</p>
 <ol>
-<li>什么时候memtable会被flush到sstable</li>
-<li>如果刷到sstable</li>
-</ol>
-<h2 id="何时触发"><a href="#何时触发" class="headerlink" title="何时触发"></a>何时触发</h2><ol>
-<li><p>在Memtable初始化的时候，里面有一个memtable_pool，这个pool初始化的时候有一个cleaner参数，用的是ColumnFamilyStore.flushLargestColumnFamily这个方法返回的runnable。</p>
+<li>排序从A收到的List<gossipdigest>，和本地的endStateMap做比较，按照Version相差的多少倒序排序，version差的越多排在越前面(也就是这个EndpointState在A和B上相差的越多)。这里只排序A发来的，B有A没有的不做处理</gossipdigest></li>
+<li><p>比较A发来的状态和B已有的状态，产出两个数据：List<gossipdigest> deltaGossipDigestList 和 Map&lt;InetAddress,EndPointState&gt; deltaEpStateMap.</gossipdigest></p>
+<p> deltaGossipDigestList存放着A有B没有，或者说A更新一些的GossipDigest，在下面的情况会放入：<br> I. A有B没有<br> II. A的Generation比B的大<br> III. A的version比B大</p>
+<p> deltaEpStateMap则是存放B有A没有，或者B更新一些的EndPointState，具体判断条件与上面的类似。</p>
 </li>
-<li><p>上面说的这个runnable被包在一个InfiniteLoopExecutor里面，外部通过调用对应的trigger方法来触发Flush(MemtableCleanerThread.trigger()).<br>通常是在外部subpool.allocate或者其他需要新开空间的情况下会调用maybeClean(MemtablePool.SubPool.maybeClean()),里面会调用trigger方法。</p>
-</li>
-<li><p>上面1说的ColumnFamilyStore.flushLargestColumnFamily这个方法返回的runnable里面具体的逻辑是在所有columnFamilyStore中找到最大的，然后调用memtable.cfs.switchMemtableIfCurrent方法来进行刷sstable。</p>
+<li><p>构造ACK消息，ACK消息只包含上面的两个数据，并回复给A。</p>
 </li>
 </ol>
-<h2 id="如何刷"><a href="#如何刷" class="headerlink" title="如何刷"></a>如何刷</h2><p>上面介绍了时候刷盘，现在介绍下刷盘是如何做的。</p>
-<p>接着上面的说的switchMemtableIfCurrent，这个方法内部会调用columnFamilyStore.flush方法。这个方法处理具体的flush逻辑，具体逻辑如下</p>
+<h3 id="ACK2"><a href="#ACK2" class="headerlink" title="ACK2"></a>ACK2</h3><p>A收到B的ACK消息之后：</p>
 <ol>
-<li><p>memtable.createFlushRunnable中，按照当前节点所持有的token（tokenRing中的token，cassandra是一个有虚拟节点的hash环结构，每个node都会分到对应范围的token）和配置中的dataDirectroy数量(cassandra可以配置多个data文件夹，如果有多个，每个文件夹负责一部分token，具体的分配逻辑在DiskBoundaryManager.getDiskBoundaries(ColumnFamilyStore)里面)来创建FlushRunnable.</p>
-</li>
-<li><p>ColumnFamilyStore.perDiskflushExecutors执行上面的flushRunnable（这里的perDiskflushExecutors是一个数组，数组里面的每一个executor负责刷一个dataDirectory）。flushRunnable的call方法会调用 FlushRunnable.writeSortedContents方法，该方法遍历要flush的memtable中的partition，然后调用 writer.append( partition.unfilteredIterator()),也就是把对应partition的信息写到sstable中。这个writer是sstable.multiwriter里面包了一个Bigtablewriter,最后调用到了bigtableWriter.append上面去。</p>
-</li>
-<li><p>具体序列化并写入文件的过程在buildRowIndex里面完成。BigtableWriter里面包了一个sequentialWriter,这个writer内部包了一个filechannel就是对应磁盘上的文件。具体的文件名则是 ${version}-${generation}-big-data.db . version是跟着cassandra的版本走的,具体代码在(BigFormat.BigVersion).</p>
-</li>
+<li>根据deltaEpStateMap更新本地的状态，只有在genration或者version大于本地时才更新。</li>
+<li>根据deltaGossipDigestList从本地取出对应最新的节点状态，构造一个epStateMap&lt;InetAddress,EndPointState&gt;(因为第一次SYN只发送了摘要，没有发送具体的EndPointState)</li>
+<li>构造ACK2消息，ACK2只包含2中的epStateMap，发送给B。</li>
+<li>B收到ACK2后更新本地状态。</li>
 </ol>
+<p>至此，A与B之间的一轮Gossip信息交换结束.整个过程可以用下图描述:</p>
+<p><img src="https://sinacloud.net/longyb-myblog/cassandra/cassandra_gossip.jpg" alt="cassandra_gossip"></p>
 
       
     </div>
@@ -487,6 +501,8 @@ window.open("https://s.click.taobao.com/XzFlP8w");
           
             <a href="/tags/Cassandra/" rel="tag"># Cassandra</a>
           
+            <a href="/tags/Gossip/" rel="tag"># Gossip</a>
+          
         </div>
       
 
@@ -498,8 +514,8 @@ window.open("https://s.click.taobao.com/XzFlP8w");
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/03/03/cassandra_write_path/" rel="next" title="Cassandra源码阅读(2)-写流程解析">
-                <i class="fa fa-chevron-left"></i> Cassandra源码阅读(2)-写流程解析
+              <a href="/2019/06/09/tomcat_hang_creation_of_securerandom_instance_for_sessionid_english/" rel="next" title="Solve Tomcat hung at start Creation of SecureRandom instance">
+                <i class="fa fa-chevron-left"></i> Solve Tomcat hung at start Creation of SecureRandom instance
               </a>
             
           </div>
@@ -507,10 +523,6 @@ window.open("https://s.click.taobao.com/XzFlP8w");
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/" rel="prev" title="Tomcat启动Creation of SecureRandom instance卡住解决">
-                Tomcat启动Creation of SecureRandom instance卡住解决 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -702,7 +714,7 @@ window.open("https://s.click.taobao.com/XzFlP8w");
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Cassandra源码阅读-3-Memtable-Flush"><span class="nav-number">1.</span> <span class="nav-text">Cassandra源码阅读(3)-Memtable Flush</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#何时触发"><span class="nav-number">1.1.</span> <span class="nav-text">何时触发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何刷"><span class="nav-number">1.2.</span> <span class="nav-text">如何刷</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是Gossip协议"><span class="nav-number">1.</span> <span class="nav-text">什么是Gossip协议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cassandra中的实现"><span class="nav-number">2.</span> <span class="nav-text">Cassandra中的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#节点状态的数据结构"><span class="nav-number">2.1.</span> <span class="nav-text">节点状态的数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SYN"><span class="nav-number">2.2.</span> <span class="nav-text">SYN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ACK"><span class="nav-number">2.3.</span> <span class="nav-text">ACK</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ACK2"><span class="nav-number">2.4.</span> <span class="nav-text">ACK2</span></a></li></ol></li></ol></div>
             
 
           </div>
@@ -921,9 +933,9 @@ window.open("https://s.click.taobao.com/XzFlP8w");
   
     <script type="text/javascript">
       var disqus_config = function () {
-        this.page.url = 'https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/';
-        this.page.identifier = '2019/04/22/cassandra_flush_memtable/';
-        this.page.title = 'Cassandra源码阅读(3)-Memtable Flush';
+        this.page.url = 'https://blog.longyb.com/2019/06/15/cassandra_gossip/';
+        this.page.identifier = '2019/06/15/cassandra_gossip/';
+        this.page.title = 'Cassandra源码阅读(5)-Gossip协议';
         };
       function loadComments () {
         var d = document, s = d.createElement('script');
