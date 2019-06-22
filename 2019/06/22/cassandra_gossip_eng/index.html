@@ -110,28 +110,27 @@
 
 
 
-  <meta name="description" content="论文笔记：Scaling Memcache at Facebook论文介绍了Facebook如何使用memcache，以及相关魔改和维护memcache集群。 背景facebook使用一致性哈希来构建memcahce集群。 We provision hundreds of memcached servers in a cluster to reduce load on databases and">
-<meta name="keywords" content="cache,论文笔记">
+  <meta name="description" content="This article describes the implementation details of the Gossip protocol in Cassandra. What is the Gossip protocol?Gossip is a widely used protocol in distributed systems, and is mainly used to implem">
+<meta name="keywords" content="Cassandra,Gossip">
 <meta property="og:type" content="article">
-<meta property="og:title" content="论文笔记：Scaling Memcache at Facebook">
-<meta property="og:url" content="https://blog.longyb.com/2018/12/17/facebook_scale_memcache/index.html">
+<meta property="og:title" content="Gossip In Cassandra">
+<meta property="og:url" content="https://blog.longyb.com/2019/06/22/cassandra_gossip_eng/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
-<meta property="og:description" content="论文笔记：Scaling Memcache at Facebook论文介绍了Facebook如何使用memcache，以及相关魔改和维护memcache集群。 背景facebook使用一致性哈希来构建memcahce集群。 We provision hundreds of memcached servers in a cluster to reduce load on databases and">
+<meta property="og:description" content="This article describes the implementation details of the Gossip protocol in Cassandra. What is the Gossip protocol?Gossip is a widely used protocol in distributed systems, and is mainly used to implem">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:image" content="http://sinacloud.net/longyb-myblog/fb_cache_aside.png">
-<meta property="og:image" content="http://sinacloud.net/longyb-myblog/fb_udp_improvement.png">
-<meta property="og:updated_time" content="2018-12-17T14:35:18.312Z">
+<meta property="og:image" content="https://sinacloud.net/longyb-myblog/cassandra/cassandra_gossip_eng_version.png">
+<meta property="og:updated_time" content="2019-06-22T11:50:52.569Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="论文笔记：Scaling Memcache at Facebook">
-<meta name="twitter:description" content="论文笔记：Scaling Memcache at Facebook论文介绍了Facebook如何使用memcache，以及相关魔改和维护memcache集群。 背景facebook使用一致性哈希来构建memcahce集群。 We provision hundreds of memcached servers in a cluster to reduce load on databases and">
-<meta name="twitter:image" content="http://sinacloud.net/longyb-myblog/fb_cache_aside.png">
+<meta name="twitter:title" content="Gossip In Cassandra">
+<meta name="twitter:description" content="This article describes the implementation details of the Gossip protocol in Cassandra. What is the Gossip protocol?Gossip is a widely used protocol in distributed systems, and is mainly used to implem">
+<meta name="twitter:image" content="https://sinacloud.net/longyb-myblog/cassandra/cassandra_gossip_eng_version.png">
 
 
 
 
 
 
-  <link rel="canonical" href="https://blog.longyb.com/2018/12/17/facebook_scale_memcache/"/>
+  <link rel="canonical" href="https://blog.longyb.com/2019/06/22/cassandra_gossip_eng/"/>
 
 
 
@@ -141,7 +140,7 @@
   };
 </script>
 
-  <title>论文笔记：Scaling Memcache at Facebook | LongYuBo's Blog</title>
+  <title>Gossip In Cassandra | LongYuBo's Blog</title>
   
 
 
@@ -333,7 +332,7 @@ window.open("https://s.click.taobao.com/XzFlP8w");
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2018/12/17/facebook_scale_memcache/">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/06/22/cassandra_gossip_eng/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="LongYuBo">
@@ -350,7 +349,7 @@ window.open("https://s.click.taobao.com/XzFlP8w");
 
         
         
-          <h1 class="post-title" itemprop="name headline">论文笔记：Scaling Memcache at Facebook
+          <h1 class="post-title" itemprop="name headline">Gossip In Cassandra
               
             
           </h1>
@@ -375,7 +374,7 @@ window.open("https://s.click.taobao.com/XzFlP8w");
                 
               
 
-              <time title="创建时间：2018-12-17 22:07:00 / 修改时间：22:35:18" itemprop="dateCreated datePublished" datetime="2018-12-17T22:07:00+08:00">2018-12-17</time>
+              <time title="创建时间：2019-06-22 19:30:00 / 修改时间：19:50:52" itemprop="dateCreated datePublished" datetime="2019-06-22T19:30:00+08:00">2019-06-22</time>
             
 
             
@@ -394,10 +393,10 @@ window.open("https://s.click.taobao.com/XzFlP8w");
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2018/12/17/facebook_scale_memcache/#comments" itemprop="discussionUrl">
+                <a href="/2019/06/22/cassandra_gossip_eng/#comments" itemprop="discussionUrl">
                 
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/12/17/facebook_scale_memcache/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2019/06/22/cassandra_gossip_eng/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -445,44 +444,45 @@ window.open("https://s.click.taobao.com/XzFlP8w");
 <script>
      (adsbygoogle = window.adsbygoogle || []).push({});
 </script>
-        <h2 id="论文笔记：Scaling-Memcache-at-Facebook"><a href="#论文笔记：Scaling-Memcache-at-Facebook" class="headerlink" title="论文笔记：Scaling Memcache at Facebook"></a>论文笔记：Scaling Memcache at Facebook</h2><p>论文介绍了Facebook如何使用memcache，以及相关魔改和维护memcache集群。</p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>facebook使用一致性哈希来构建memcahce集群。</p>
-<pre><code>We provision hundreds of memcached servers in a cluster to reduce load on databases and other services.
-Items are distributed across the memcached servers through consistent hashing [22]. 
-Thus web servers have to routinely communicate with many memcached servers to satisfy a user request
-</code></pre><h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><h3 id="cache-aside模式"><a href="#cache-aside模式" class="headerlink" title="cache aside模式"></a>cache aside模式</h3><p>facebook根据他们的场景，也就是读多写少使用了cache aside模式。原文叫demand-filled look-aside cache。具体使用方式如下图。<br><img src="http://sinacloud.net/longyb-myblog/fb_cache_aside.png" alt=""><br>facebook 使用delete而不是update缓存的原因是因为delete是幂等的，而update不是(we choose to delete cached data instead of updating it because deletes are idempotent).如果直接更新可能出现先更新的后放入缓存。</p>
-<p>在facebook也是用memcache作为大数据平台计算的中间结果存储平台，用来存放一些中间结果</p>
-<h2 id="魔改"><a href="#魔改" class="headerlink" title="魔改"></a>魔改</h2><h3 id="魔改背景"><a href="#魔改背景" class="headerlink" title="魔改背景"></a>魔改背景</h3><p>一个web请求会请求平均521个独立的缓存项.(A single user web request can often result in hundreds of individual memcache get requests. For example, loading one of our popular pages results in an average of 521 distinct items fetched from memcache)</p>
-<h3 id="魔改目的"><a href="#魔改目的" class="headerlink" title="魔改目的"></a>魔改目的</h3><p>魔改的目的是为了降低延迟，降低负载。</p>
-<h3 id="魔改方法"><a href="#魔改方法" class="headerlink" title="魔改方法"></a>魔改方法</h3><p>延迟与负载：1.网络延迟 2.由于cache miss带来的延迟和后端的负载。解决方案如下：</p>
+        <p>This article describes the implementation details of the Gossip protocol in Cassandra.</p>
+<h2 id="What-is-the-Gossip-protocol"><a href="#What-is-the-Gossip-protocol" class="headerlink" title="What is the Gossip protocol?"></a>What is the Gossip protocol?</h2><p>Gossip is a widely used protocol in distributed systems, and is mainly used to implement information exchange between distributed nodes or processes.The Gossip protocol uses a random way to spread information across the network.As Gossip itself means, the workflow of the Gossip protocol is similar to the spread of anecdotes or the spread of epidemics.<br>More detailed information can be found on the Wikipedia page <a href="https://en.wikipedia.org/wiki/Gossip_protocol" target="_blank" rel="noopener">Gossip_protocol</a></p>
+<h2 id="Implementation-in-Cassandra"><a href="#Implementation-in-Cassandra" class="headerlink" title="Implementation in Cassandra"></a>Implementation in Cassandra</h2><p>The gossip-related processing in cassandra is concentrated in the Gossiper class.The method of initiating gossip is in the Gossiper.gossipTask.run method, which is a runnable and executed once per second by a scheduled task in the upper layer.</p>
+<h3 id="Node-State-ata-structure"><a href="#Node-State-ata-structure" class="headerlink" title="Node State ata structure"></a>Node State ata structure</h3><p>Gossiper.endpointStateMap&lt;InetAddress, EndPointState&gt; holds the state of the entire cluster known to the current node. The key is the IP address of the corresponding node, and the value is EndPointState.</p>
+<p>EndPointState consists of two parts: HeartBeatState and ApplicationState.</p>
+<p>There are two members in HeartBeatState, generation and version.The generation can be understood as the major version number of the current cluster state, and the version is the minor version number, starting from 0.</p>
+<p>ApplicationState is actually a Map&lt;ApplicationState, VersionedValue&gt;, which stores a variety of application information and the version corresponding to the information.ApplicationState is an enumeration.</p>
+<p>The Gossip protocol in Cassandra have three phases.SYN, ACK, ACK2.Consider sending a gossip message from A to B as an example: A sends a SYN message to B. After receiving the SYN message, B replies with an ACK message. After receiving the ACK message from B, A replies with ACK2 message to B to complete a message exchange. .</p>
+<p>The specific implementation details of each phase are described below.</p>
+<h3 id="SYN"><a href="#SYN" class="headerlink" title="SYN"></a>SYN</h3><ol>
+<li><p>Update the HeartBeatState.version of the local node , increase it by 1.</p>
+</li>
+<li><p>Construct a SYN message.The SYN message contains a List&lt; GossipDigest &gt; and cluster name as well as the partitioner of the cluster.GossipDigest is a summary of node information, including three fields: the address of the node (InetAddress), Generation (which is the generation in heartbeatstate), maxVersion (take the maximum value of the version in heartBeat and the versionedValue in the applicationState )<br>Take out all the endpointStates in the endpointStateMap to construct the List.</p>
+</li>
+<li><p>Randomly select one from the living nodes (Gossiper.liveEndPoints), the so-called sending object, and send a SYN message.If liveEndPoints is empty, nothing is done.</p>
+</li>
+<li>An attempt is made to send a SYN message to an unreachable node by generating a random number rnd. If rnd is less than the number of unreachable nodes / (number of surviving nodes + 1), randomly select one of the unreachable nodes to send a SYN message.</li>
+<li>If no message is sent in step 3, or the number of nodes that are alive is less than the number of seed nodes, then the seed node is sent a message, the algorithm is similar to step 4, rnd &lt; number of seed nodes / (survival node + unreachable node)</li>
+</ol>
+<h3 id="ACK"><a href="#ACK" class="headerlink" title="ACK"></a>ACK</h3><p>After receiving the SYN from A, B replies an ACK message to A, as follows:</p>
 <ol>
-<li>代码批量化访问缓存，减少来回的网络开销</li>
-<li>对于网络延迟的降低，facebook对于GET使用UDP传输，SET和DELETE使用TCP传输。因为UDP是无连接的，可以降低TCP维护链接的开销。使用UDP客户端自己记录请求序号，丢包和乱序被视为客户端错误，在实际生产环境中，有0.25%的get请求被扔掉。其中的80%是因为回包延迟，其他的是因为乱序。对于上面的错误，客户端直接认为是cache miss。直接取后端，但是不会放入缓存是为了避免额外的网络开销<br>效果如下图:<br><img src="http://sinacloud.net/longyb-myblog/fb_udp_improvement.png" alt=""></li>
-<li>使用类似TCP拥塞控制的方法来防止缓存集群负载过高。客户端维护一个滑动窗口，当服务端正常响应，就加大窗口，当服务端没响应或者超时就减小窗口。</li>
+<li><p>Sort the list received from A. The ordering is based on the comparison between the elements in the list and the local endStateMap. According to the order of the differences of the version, the more the versions differs the more element is in the front.(That is, the element in the front differs most between A and B).</p>
+</li>
+<li><p>Comparing the status sent by A with the existing state of B, yielding two data: List&lt; GossipDigest &gt; deltaGossipDigestList and Map&lt;InetAddress, EndPointState&gt; deltaEpStateMap.</p>
+<p> The deltaGossipDigestList stores the GossipDigest that A has while  B hasn’t , or A has the newer version, and will be placed in the following cases:<br> I. A has B don’t has<br> II. A’s Generation is greater than B’s<br> III. A’s version is greater than B</p>
+<p> deltaEpStateMap stores infomation that B hold while  A not , or B holds the newer version of EndPointState, using the similar conditions described above.</p>
+</li>
+<li><p>Constructs an ACK message. The ACK message only contains the deltaGossipDigestList and deltaEpStateMap, reply it to A</p>
+</li>
 </ol>
-<h3 id="后端负载降低"><a href="#后端负载降低" class="headerlink" title="后端负载降低"></a>后端负载降低</h3><ol>
-<li>引入“租约Leases”，租约用来解决两个方面的问题 1. 过期的设置 2.惊群效应（stale sets and thundering herds）。</li>
+<h3 id="ACK2"><a href="#ACK2" class="headerlink" title="ACK2"></a>ACK2</h3><p>After A receives the ACK message from B:</p>
+<ol>
+<li>The local state is updated according to deltaEpStateMap when genration or version is greater than local.</li>
+<li>According to the deltaGossipDigestList, the corresponding latest node state is picked , and put it into an epStateMap&lt;InetAddress, EndPointState&gt;  (because the first SYN only sends the digest and does not send the complete EndPointState)</li>
+<li>Constructs an ACK2 message. ACK2 contains only the epStateMap from step 2 and sends it to B.</li>
+<li>B updates the local status after receiving ACK2.</li>
 </ol>
-<ul>
-<li>过期的设置主要来源于放入缓存的顺序错乱（后来先到）。</li>
-<li>惊群效应发生在某个key被频繁的读写。由于写是invalid cache，所以大量读请求就会无法命中缓存，导致进入了后端的数据库。</li>
-<li>租约就是一个对应于请求的key的64bit的token。（The lease is a 64-bit token bound to the specific key the client originally requested）。当set cache的时候，客户端需要把这个key带上一起给到缓存服务器，当服务端发现token不匹配的时候，就说明这是一个过期的写请求。</li>
-<li>租约同时可以降低惊群效应。缓存服务器控制发token的频率，默认是10秒一次，缓存服务器发过一次token后，后续再来的请求就直接等一会（等前面那个拿到token的返回之后，缓存就有数据了）<br>Without leases, all of the cache misses resulted in a peak database query rate of 17K/s. With leases, the peak database query rate was 1.3K/s</li>
-</ul>
-<ol start="2">
-<li>使用过期值</li>
-</ol>
-<ul>
-<li>通过返回slightly out-of-date data，当一个key被删除的时候，在真正flush之前，会被放入一个特殊的数据结构中。get请求可以返回一个租约或者这个被标记为过期的值。</li>
-</ul>
-<ol start="3">
-<li>处理失败，这里的失败有两种</li>
-</ol>
-<ul>
-<li>有一小部分机器由于网络原因无法访问（facebook依赖一个自动化的组件去发现这些机器，但需要时间 few minutes，在这一段时间内可能会带来一些连锁失败）<br> 解决办法：有一个叫gutter的小池子，大概是cache集群的1%大小，用来替代那些无法访问的机器。当client无法收到缓存服务器的响应，他们就去访问gutter池子里面的机器。注意这根一般一致性哈希的玩法不一样，原因是有可能有些key非常的热，如果把它hash到下一台机器，就会增加那台机器的负载，导致又爆炸。把它导到空闲的gutter机器上就可以避免这个问题。一旦出现一台缓存机器无法访问，gutter通常能在4分钟内，缓存命中率能超过35%，有时能达到50%</li>
-<li>集群中的大部分机器都无法访问<br> 解决办法：切换流量到其他可用region</li>
-</ul>
-<h3 id="维护memcache集群"><a href="#维护memcache集群" class="headerlink" title="维护memcache集群"></a>维护memcache集群</h3><p>待续</p>
+<p>At this point, a round of Gossip information exchange between A and B ends.The whole process can be described as follows:</p>
+<p><img src="https://sinacloud.net/longyb-myblog/cassandra/cassandra_gossip_eng_version.png" alt="cassandra_gossip"></p>
 
       
     </div>
@@ -503,9 +503,9 @@ Thus web servers have to routinely communicate with many memcached servers to sa
       
         <div class="post-tags">
           
-            <a href="/tags/cache/" rel="tag"># cache</a>
+            <a href="/tags/Cassandra/" rel="tag"># Cassandra</a>
           
-            <a href="/tags/论文笔记/" rel="tag"># 论文笔记</a>
+            <a href="/tags/Gossip/" rel="tag"># Gossip</a>
           
         </div>
       
@@ -518,8 +518,8 @@ Thus web servers have to routinely communicate with many memcached servers to sa
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2018/10/12/cardinality_estimation/" rel="next" title="基数估计算法简介">
-                <i class="fa fa-chevron-left"></i> 基数估计算法简介
+              <a href="/2019/06/15/cassandra_gossip/" rel="next" title="Cassandra源码阅读(7)-Gossip协议">
+                <i class="fa fa-chevron-left"></i> Cassandra源码阅读(7)-Gossip协议
               </a>
             
           </div>
@@ -527,10 +527,6 @@ Thus web servers have to routinely communicate with many memcached servers to sa
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/01/23/transaction_mq/" rel="prev" title="事务消息组件的套路">
-                事务消息组件的套路 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -722,7 +718,7 @@ Thus web servers have to routinely communicate with many memcached servers to sa
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#论文笔记：Scaling-Memcache-at-Facebook"><span class="nav-number">1.</span> <span class="nav-text">论文笔记：Scaling Memcache at Facebook</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用"><span class="nav-number">3.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cache-aside模式"><span class="nav-number">3.1.</span> <span class="nav-text">cache aside模式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#魔改"><span class="nav-number">4.</span> <span class="nav-text">魔改</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#魔改背景"><span class="nav-number">4.1.</span> <span class="nav-text">魔改背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#魔改目的"><span class="nav-number">4.2.</span> <span class="nav-text">魔改目的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#魔改方法"><span class="nav-number">4.3.</span> <span class="nav-text">魔改方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#后端负载降低"><span class="nav-number">4.4.</span> <span class="nav-text">后端负载降低</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#维护memcache集群"><span class="nav-number">4.5.</span> <span class="nav-text">维护memcache集群</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#What-is-the-Gossip-protocol"><span class="nav-number">1.</span> <span class="nav-text">What is the Gossip protocol?</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Implementation-in-Cassandra"><span class="nav-number">2.</span> <span class="nav-text">Implementation in Cassandra</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Node-State-ata-structure"><span class="nav-number">2.1.</span> <span class="nav-text">Node State ata structure</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SYN"><span class="nav-number">2.2.</span> <span class="nav-text">SYN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ACK"><span class="nav-number">2.3.</span> <span class="nav-text">ACK</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ACK2"><span class="nav-number">2.4.</span> <span class="nav-text">ACK2</span></a></li></ol></li></ol></div>
             
 
           </div>
@@ -942,9 +938,9 @@ Thus web servers have to routinely communicate with many memcached servers to sa
   
     <script type="text/javascript">
       var disqus_config = function () {
-        this.page.url = 'https://blog.longyb.com/2018/12/17/facebook_scale_memcache/';
-        this.page.identifier = '2018/12/17/facebook_scale_memcache/';
-        this.page.title = '论文笔记：Scaling Memcache at Facebook';
+        this.page.url = 'https://blog.longyb.com/2019/06/22/cassandra_gossip_eng/';
+        this.page.identifier = '2019/06/22/cassandra_gossip_eng/';
+        this.page.title = 'Gossip In Cassandra';
         };
       function loadComments () {
         var d = document, s = d.createElement('script');

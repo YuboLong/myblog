@@ -2,9 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2019/06/22/cassandra_gossip_eng/</loc>
+    
+    <lastmod>2019-06-22T11:50:52.569Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/06/15/cassandra_gossip/</loc>
     
-    <lastmod>2019-06-15T05:38:12.943Z</lastmod>
+    <lastmod>2019-06-21T13:33:31.967Z</lastmod>
     
   </url>
   
