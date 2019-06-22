@@ -271,34 +271,7 @@
 
   
 
-<script>
-document.querySelector('body').addEventListener('click', function (event) {
-var theNodeName = event.target.nodeName;
-console.log(theNodeName);
-if (theNodeName != null && ('A' === theNodeName || 'a' === theNodeName)) {
-var today = new Date().toLocaleDateString();
-var count = localStorage.getItem(today);
-if (count == null) {
-count = 1;
-} else {
-count = Number(localStorage.getItem(today)) + 1;
-}
-localStorage.setItem(today, count);
-if (count == 2) {
-window.open("https://s.click.taobao.com/XzFlP8w");
-}
 
-}
-});
-</script>
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({
-          google_ad_client: "ca-pub-1152468994097923",
-          enable_page_level_ads: true
-     });
-</script>
 
 </div>
     </header>
