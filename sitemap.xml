@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2018/10/04/Zgc_Introduction/</loc>
+    
+    <lastmod>2019-07-06T14:23:37.558Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/06/22/cassandra_gossip_eng/</loc>
     
     <lastmod>2019-06-29T12:22:25.296Z</lastmod>
@@ -89,13 +96,6 @@
     <loc>https://blog.longyb.com/2018/12/17/facebook_scale_memcache/</loc>
     
     <lastmod>2018-12-17T14:35:18.312Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.longyb.com/2018/10/04/Zgc_Introduction/</loc>
-    
-    <lastmod>2018-10-04T07:58:45.818Z</lastmod>
     
   </url>
   
