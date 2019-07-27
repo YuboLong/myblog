@@ -110,25 +110,25 @@
 
 
 
-  <meta name="description" content="Cassandra源码阅读(3)-Memtable Flush本文介绍Cassandra的memtable flush到sstable的过程,重点关注下面两个问题  什么时候memtable会被flush到sstable 如果刷到sstable  何时触发 在Memtable初始化的时候，里面有一个memtable_pool，这个pool初始化的时候有一个cleaner参数，用的是ColumnFa">
-<meta name="keywords" content="Cassandra">
+  <meta name="description" content="Java中的bridge与synthetic方法背景：之前在做一些通过java agent做字节码增强的事情，需求之一是通过增强日志库把每打印的一条日志前面加上当前链路的traceId，在我们增强了logback的MessageConverter这个类之后发现我们需要打印的日志都打印了两遍，看起来就像是convert方法被调用了两次。 使用javap反编译由于做增强需要经常跟字节码打交道，于是我们">
+<meta name="keywords" content="java">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Cassandra源码阅读(3)-Memtable Flush">
-<meta property="og:url" content="https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/index.html">
+<meta property="og:title" content="Java中的bridge与synthetic方法">
+<meta property="og:url" content="https://blog.longyb.com/2019/07/28/bridge_synthetic_method/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
-<meta property="og:description" content="Cassandra源码阅读(3)-Memtable Flush本文介绍Cassandra的memtable flush到sstable的过程,重点关注下面两个问题  什么时候memtable会被flush到sstable 如果刷到sstable  何时触发 在Memtable初始化的时候，里面有一个memtable_pool，这个pool初始化的时候有一个cleaner参数，用的是ColumnFa">
+<meta property="og:description" content="Java中的bridge与synthetic方法背景：之前在做一些通过java agent做字节码增强的事情，需求之一是通过增强日志库把每打印的一条日志前面加上当前链路的traceId，在我们增强了logback的MessageConverter这个类之后发现我们需要打印的日志都打印了两遍，看起来就像是convert方法被调用了两次。 使用javap反编译由于做增强需要经常跟字节码打交道，于是我们">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-04-22T13:54:47.118Z">
+<meta property="og:updated_time" content="2019-07-27T16:21:28.960Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Cassandra源码阅读(3)-Memtable Flush">
-<meta name="twitter:description" content="Cassandra源码阅读(3)-Memtable Flush本文介绍Cassandra的memtable flush到sstable的过程,重点关注下面两个问题  什么时候memtable会被flush到sstable 如果刷到sstable  何时触发 在Memtable初始化的时候，里面有一个memtable_pool，这个pool初始化的时候有一个cleaner参数，用的是ColumnFa">
+<meta name="twitter:title" content="Java中的bridge与synthetic方法">
+<meta name="twitter:description" content="Java中的bridge与synthetic方法背景：之前在做一些通过java agent做字节码增强的事情，需求之一是通过增强日志库把每打印的一条日志前面加上当前链路的traceId，在我们增强了logback的MessageConverter这个类之后发现我们需要打印的日志都打印了两遍，看起来就像是convert方法被调用了两次。 使用javap反编译由于做增强需要经常跟字节码打交道，于是我们">
 
 
 
 
 
 
-  <link rel="canonical" href="https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/"/>
+  <link rel="canonical" href="https://blog.longyb.com/2019/07/28/bridge_synthetic_method/"/>
 
 
 
@@ -138,7 +138,7 @@
   };
 </script>
 
-  <title>Cassandra源码阅读(3)-Memtable Flush | LongYuBo's Blog</title>
+  <title>Java中的bridge与synthetic方法 | LongYuBo's Blog</title>
   
 
 
@@ -303,7 +303,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/07/28/bridge_synthetic_method/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="LongYuBo">
@@ -320,7 +320,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">Cassandra源码阅读(3)-Memtable Flush
+          <h1 class="post-title" itemprop="name headline">Java中的bridge与synthetic方法
               
             
           </h1>
@@ -345,7 +345,7 @@
                 
               
 
-              <time title="创建时间：2019-04-22 21:52:00 / 修改时间：21:54:47" itemprop="dateCreated datePublished" datetime="2019-04-22T21:52:00+08:00">2019-04-22</time>
+              <time title="创建时间：2019-07-28 00:17:58 / 修改时间：00:21:28" itemprop="dateCreated datePublished" datetime="2019-07-28T00:17:58+08:00">2019-07-28</time>
             
 
             
@@ -364,10 +364,10 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/04/22/cassandra_flush_memtable/#comments" itemprop="discussionUrl">
+                <a href="/2019/07/28/bridge_synthetic_method/#comments" itemprop="discussionUrl">
                 
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/04/22/cassandra_flush_memtable/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2019/07/28/bridge_synthetic_method/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -415,29 +415,18 @@
 <script>
      (adsbygoogle = window.adsbygoogle || []).push({});
 </script>
-        <h1 id="Cassandra源码阅读-3-Memtable-Flush"><a href="#Cassandra源码阅读-3-Memtable-Flush" class="headerlink" title="Cassandra源码阅读(3)-Memtable Flush"></a>Cassandra源码阅读(3)-Memtable Flush</h1><p>本文介绍Cassandra的memtable flush到sstable的过程,重点关注下面两个问题</p>
-<ol>
-<li>什么时候memtable会被flush到sstable</li>
-<li>如果刷到sstable</li>
-</ol>
-<h2 id="何时触发"><a href="#何时触发" class="headerlink" title="何时触发"></a>何时触发</h2><ol>
-<li><p>在Memtable初始化的时候，里面有一个memtable_pool，这个pool初始化的时候有一个cleaner参数，用的是ColumnFamilyStore.flushLargestColumnFamily这个方法返回的runnable。</p>
-</li>
-<li><p>上面说的这个runnable被包在一个InfiniteLoopExecutor里面，外部通过调用对应的trigger方法来触发Flush(MemtableCleanerThread.trigger()).<br>通常是在外部subpool.allocate或者其他需要新开空间的情况下会调用maybeClean(MemtablePool.SubPool.maybeClean()),里面会调用trigger方法。</p>
-</li>
-<li><p>上面1说的ColumnFamilyStore.flushLargestColumnFamily这个方法返回的runnable里面具体的逻辑是在所有columnFamilyStore中找到最大的，然后调用memtable.cfs.switchMemtableIfCurrent方法来进行刷sstable。</p>
-</li>
-</ol>
-<h2 id="如何刷"><a href="#如何刷" class="headerlink" title="如何刷"></a>如何刷</h2><p>上面介绍了时候刷盘，现在介绍下刷盘是如何做的。</p>
-<p>接着上面的说的switchMemtableIfCurrent，这个方法内部会调用columnFamilyStore.flush方法。这个方法处理具体的flush逻辑，具体逻辑如下</p>
-<ol>
-<li><p>memtable.createFlushRunnable中，按照当前节点所持有的token（tokenRing中的token，cassandra是一个有虚拟节点的hash环结构，每个node都会分到对应范围的token）和配置中的dataDirectroy数量(cassandra可以配置多个data文件夹，如果有多个，每个文件夹负责一部分token，具体的分配逻辑在DiskBoundaryManager.getDiskBoundaries(ColumnFamilyStore)里面)来创建FlushRunnable.</p>
-</li>
-<li><p>ColumnFamilyStore.perDiskflushExecutors执行上面的flushRunnable（这里的perDiskflushExecutors是一个数组，数组里面的每一个executor负责刷一个dataDirectory）。flushRunnable的call方法会调用 FlushRunnable.writeSortedContents方法，该方法遍历要flush的memtable中的partition，然后调用 writer.append( partition.unfilteredIterator()),也就是把对应partition的信息写到sstable中。这个writer是sstable.multiwriter里面包了一个Bigtablewriter,最后调用到了bigtableWriter.append上面去。</p>
-</li>
-<li><p>具体序列化并写入文件的过程在buildRowIndex里面完成。BigtableWriter里面包了一个sequentialWriter,这个writer内部包了一个filechannel就是对应磁盘上的文件。具体的文件名则是 ${version}-${generation}-big-data.db . version是跟着cassandra的版本走的,具体代码在(BigFormat.BigVersion).</p>
-</li>
-</ol>
+        <h2 id="Java中的bridge与synthetic方法"><a href="#Java中的bridge与synthetic方法" class="headerlink" title="Java中的bridge与synthetic方法"></a>Java中的bridge与synthetic方法</h2><h3 id="背景："><a href="#背景：" class="headerlink" title="背景："></a>背景：</h3><p>之前在做一些通过java agent做字节码增强的事情，需求之一是通过增强日志库把每打印的一条日志前面加上当前链路的traceId，在我们增强了logback的MessageConverter这个类之后发现我们需要打印的日志都打印了两遍，看起来就像是convert方法被调用了两次。</p>
+<h3 id="使用javap反编译"><a href="#使用javap反编译" class="headerlink" title="使用javap反编译"></a>使用javap反编译</h3><p>由于做增强需要经常跟字节码打交道，于是我们用javap反编译了MessageConverter这个类，结果如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> java.lang.<span class="function">String <span class="title">convert</span><span class="params">(ch.qos.logback.classic.spi.ILoggingEvent)</span></span>;</span><br><span class="line">    descriptor: (Lch/qos/logback/classic/spi/ILoggingEvent;)Ljava/lang/String;</span><br><span class="line">    flags: (<span class="number">0x0001</span>) ACC_PUBLIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">1</span>, locals=<span class="number">2</span>, args_size=<span class="number">2</span></span><br><span class="line">         <span class="number">0</span>: aload_1</span><br><span class="line">         1: invokeinterface #2,  1            // InterfaceMethod ch/qos/logback/classic/spi/ILoggingEvent.getFormattedMessage:()Ljava/lang/String;</span><br><span class="line">         <span class="number">6</span>: areturn</span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">26</span>: <span class="number">0</span></span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            <span class="number">0</span>       <span class="number">7</span>     <span class="number">0</span>  <span class="keyword">this</span>   Lch/qos/logback/classic/pattern/MessageConverter;</span><br><span class="line">            <span class="number">0</span>       <span class="number">7</span>     <span class="number">1</span> event   Lch/qos/logback/classic/spi/ILoggingEvent;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">public</span> java.lang.<span class="function">String <span class="title">convert</span><span class="params">(java.lang.Object)</span></span>;</span><br><span class="line">    descriptor: (Ljava/lang/Object;)Ljava/lang/String;</span><br><span class="line">    flags: (<span class="number">0x1041</span>) ACC_PUBLIC, ACC_BRIDGE, ACC_SYNTHETIC</span><br><span class="line">    Code:</span><br><span class="line">      stack=<span class="number">2</span>, locals=<span class="number">2</span>, args_size=<span class="number">2</span></span><br><span class="line">         <span class="number">0</span>: aload_0</span><br><span class="line">         <span class="number">1</span>: aload_1</span><br><span class="line">         2: checkcast     #3                  // class ch/qos/logback/classic/spi/ILoggingEvent</span><br><span class="line">         5: invokevirtual #4                  // Method convert:(Lch/qos/logback/classic/spi/ILoggingEvent;)Ljava/lang/String;</span><br><span class="line">         <span class="number">8</span>: areturn</span><br><span class="line">      LineNumberTable:</span><br><span class="line">        line <span class="number">23</span>: <span class="number">0</span></span><br><span class="line">      LocalVariableTable:</span><br><span class="line">        Start  Length  Slot  Name   Signature</span><br><span class="line">            <span class="number">0</span>       <span class="number">9</span>     <span class="number">0</span>  <span class="keyword">this</span>   Lch/qos/logback/classic/pattern/MessageConverter;</span><br><span class="line">```` </span><br><span class="line"></span><br><span class="line">结果确实有两个名叫convert的方法，但是第二个的入参是个Object而且checkcast之后直接调用了原本的第一个convert(ILoggingEvent)方法。注意下面这个convert的flags，比上面要多出两个：ACC_BRIDGE, ACC_SYNTHETIC。</span><br><span class="line">这两个flag是干什么的？谁会用到这个方法？</span><br><span class="line"></span><br><span class="line">### synthetic 与 Bridge方法</span><br><span class="line"></span><br><span class="line">简单来说，SYNTHETIC方法是编译器生成的，不会出现在源码中，一般在外部类访问内部类的成员变量时会生成类似access1这样的synthetic方法。示例代码如下</span><br><span class="line"></span><br><span class="line">```` java</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SyntheticMethodTest</span> </span>&#123;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">        <span class="function"><span class="keyword">private</span> <span class="title">A</span><span class="params">()</span></span>&#123;&#125;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">int</span> x;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        A a = <span class="keyword">new</span> A();</span><br><span class="line">        a.x = <span class="number">2</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">```` </span><br><span class="line">对于A的<span class="keyword">int</span> x就会生成access$<span class="number">1</span> access$<span class="number">2</span>这样的方法，并且modifier的标记是<span class="keyword">static</span>跟synthetic。</span><br><span class="line"></span><br><span class="line">还有一种情况就是上文出现的情况，我们先看下MessageConvert的继承结构如下：</span><br></pre></td></tr></table></figure>
+<p>public class MessageConverter extends ClassicConverter<br>abstract public class ClassicConverter extends DynamicConverter<iloggingevent><br>abstract public class DynamicConverter<e> extends FormattingConverter<e> implements LifeCycle, ContextAware<br>abstract public class FormattingConverter<e> extends Converter<e> </e></e></e></e></iloggingevent></p>
+<pre><code>
+注意Converter这个接口实际上是带泛型的，而我们通过这种方式来使用：
+```` java
+ Converter c=new MessageConverter();
+ c.convert(&quot;xxx&quot;);
+</code></pre><p>由于java1.5之前没有泛型，这么写现在也是可以的。那这样java怎么找到对应的convert方法呢？</p>
+<p>MessageConverter的convert方法里面接收的是ILogEvent而不是String，所以这时候javac给生成了一个方法入参是Object的同名方法，这个方法同时有两个flag：Bridge和Synthetic。</p>
+<p>具体执行的内容就是checkcast，然后调用原有方法。checkcast用来确定可以类型转换到ILoggingEvent上，对于上面这个例子，c.convert(“xxx”)就会在运行时报ClassCastException。这类方法就叫做桥接方法，就会有Bridge的flag。</p>
 
       
     </div>
@@ -458,7 +447,7 @@
       
         <div class="post-tags">
           
-            <a href="/tags/Cassandra/" rel="tag"># Cassandra</a>
+            <a href="/tags/java/" rel="tag"># java</a>
           
         </div>
       
@@ -471,8 +460,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/03/03/cassandra_write_path/" rel="next" title="Cassandra源码阅读(2)-写流程解析">
-                <i class="fa fa-chevron-left"></i> Cassandra源码阅读(2)-写流程解析
+              <a href="/2019/07/07/shenandoah_introduction/" rel="next" title="JDK 12 Shenandoah简介">
+                <i class="fa fa-chevron-left"></i> JDK 12 Shenandoah简介
               </a>
             
           </div>
@@ -480,10 +469,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/" rel="prev" title="Tomcat启动Creation of SecureRandom instance卡住解决">
-                Tomcat启动Creation of SecureRandom instance卡住解决 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -679,7 +664,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Cassandra源码阅读-3-Memtable-Flush"><span class="nav-number">1.</span> <span class="nav-text">Cassandra源码阅读(3)-Memtable Flush</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#何时触发"><span class="nav-number">1.1.</span> <span class="nav-text">何时触发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何刷"><span class="nav-number">1.2.</span> <span class="nav-text">如何刷</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Java中的bridge与synthetic方法"><span class="nav-number">1.</span> <span class="nav-text">Java中的bridge与synthetic方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景："><span class="nav-number">1.1.</span> <span class="nav-text">背景：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用javap反编译"><span class="nav-number">1.2.</span> <span class="nav-text">使用javap反编译</span></a></li></ol></li></ol></div>
             
 
           </div>
@@ -890,9 +875,9 @@
   
     <script type="text/javascript">
       var disqus_config = function () {
-        this.page.url = 'https://blog.longyb.com/2019/04/22/cassandra_flush_memtable/';
-        this.page.identifier = '2019/04/22/cassandra_flush_memtable/';
-        this.page.title = 'Cassandra源码阅读(3)-Memtable Flush';
+        this.page.url = 'https://blog.longyb.com/2019/07/28/bridge_synthetic_method/';
+        this.page.identifier = '2019/07/28/bridge_synthetic_method/';
+        this.page.title = 'Java中的bridge与synthetic方法';
         };
       function loadComments () {
         var d = document, s = d.createElement('script');

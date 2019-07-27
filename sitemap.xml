@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2019/07/28/bridge_synthetic_method/</loc>
+    
+    <lastmod>2019-07-27T16:21:28.960Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/</loc>
     
     <lastmod>2019-07-07T03:40:09.212Z</lastmod>
