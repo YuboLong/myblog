@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2019/08/03/use_local_jar_in_maven_project/</loc>
+    
+    <lastmod>2019-08-03T08:54:13.993Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/07/28/bridge_synthetic_method/</loc>
     
     <lastmod>2019-07-27T16:30:51.035Z</lastmod>
