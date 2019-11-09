@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.2/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=6.4.2" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.2">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.2" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '6.4.2',
+    sidebar: {"position":"right","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":true},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="记一次netty线程池使用错误导致的内存泄漏背景该项目是一个重构项目，原来的工程是一个LUA+C++的项目，叫做BC服，项目转到我们组，由于我们组没人有相关经验，决定使用JAVA重写。原始项目整体结构如下：  我们重写改造后的结构如下：  我们的接入服务中的网络框架选用的是netty，在channel初始化的最后放了一个线程池，在线程池里面的做同步的远程dubbo调用。代码如下 123456789">
+<meta name="keywords" content="java,netty">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次netty线程池使用错误导致的内存泄漏">
+<meta property="og:url" content="https://blog.longyb.com/2019/11/09/netty_choose_executorgroup/index.html">
+<meta property="og:site_name" content="LongYuBo&#39;s Blog">
+<meta property="og:description" content="记一次netty线程池使用错误导致的内存泄漏背景该项目是一个重构项目，原来的工程是一个LUA+C++的项目，叫做BC服，项目转到我们组，由于我们组没人有相关经验，决定使用JAVA重写。原始项目整体结构如下：  我们重写改造后的结构如下：  我们的接入服务中的网络框架选用的是netty，在channel初始化的最后放了一个线程池，在线程池里面的做同步的远程dubbo调用。代码如下 123456789">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="https://sinacloud.net/longyb-myblog/old_bc_server.png">
+<meta property="og:image" content="https://sinacloud.net/longyb-myblog/new_bc_server.png">
+<meta property="og:updated_time" content="2019-11-09T13:33:55.298Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="记一次netty线程池使用错误导致的内存泄漏">
+<meta name="twitter:description" content="记一次netty线程池使用错误导致的内存泄漏背景该项目是一个重构项目，原来的工程是一个LUA+C++的项目，叫做BC服，项目转到我们组，由于我们组没人有相关经验，决定使用JAVA重写。原始项目整体结构如下：  我们重写改造后的结构如下：  我们的接入服务中的网络框架选用的是netty，在channel初始化的最后放了一个线程池，在线程池里面的做同步的远程dubbo调用。代码如下 123456789">
+<meta name="twitter:image" content="https://sinacloud.net/longyb-myblog/old_bc_server.png">
+
+
+
+
+
+
+  <link rel="canonical" href="https://blog.longyb.com/2019/11/09/netty_choose_executorgroup/"/>
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>记一次netty线程池使用错误导致的内存泄漏 | LongYuBo's Blog</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">LongYuBo's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">Things about programming</p>
+      
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br />首页</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+    <a href="/about/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-user"></i> <br />关于</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+    <a href="/tags/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />标签</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />归档</a>
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://blog.longyb.com/2019/11/09/netty_choose_executorgroup/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="LongYuBo">
+      <meta itemprop="description" content="Backend Developer">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="LongYuBo's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">记一次netty线程池使用错误导致的内存泄漏
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-11-09 20:05:00 / 修改时间：21:33:55" itemprop="dateCreated datePublished" datetime="2019-11-09T20:05:00+08:00">2019-11-09</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="post-meta-item-icon"
+            >
+            <i class="fa fa-eye"></i>
+             阅读次数： 
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- articleHead -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-1152468994097923"
+     data-ad-slot="2854476122"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+        <h2 id="记一次netty线程池使用错误导致的内存泄漏"><a href="#记一次netty线程池使用错误导致的内存泄漏" class="headerlink" title="记一次netty线程池使用错误导致的内存泄漏"></a>记一次netty线程池使用错误导致的内存泄漏</h2><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>该项目是一个重构项目，原来的工程是一个LUA+C++的项目，叫做BC服，项目转到我们组，由于我们组没人有相关经验，决定使用JAVA重写。<br>原始项目整体结构如下：</p>
+<p><img src="https://sinacloud.net/longyb-myblog/old_bc_server.png" alt=""></p>
+<p>我们重写改造后的结构如下：</p>
+<p><img src="https://sinacloud.net/longyb-myblog/new_bc_server.png" alt=""></p>
+<p>我们的接入服务中的网络框架选用的是netty，在channel初始化的最后放了一个线程池，在线程池里面的做同步的远程dubbo调用。代码如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">DefaultEventExecutorGroup defaultEventExecutorGroup=new DefaultEventExecutorGroup(64);</span><br><span class="line">ServerBootstrap b = new ServerBootstrap(); </span><br><span class="line">b.group(workerGroup)</span><br><span class="line">.channel(NioServerSocketChannel.class) </span><br><span class="line">.childHandler(new ChannelInitializer&lt;SocketChannel&gt;() &#123; </span><br><span class="line">      @Override</span><br><span class="line">      public void initChannel(SocketChannel ch) throws Exception &#123;</span><br><span class="line">          ch.pipeline().addLast(XXX).addLast(YYY).addLast(defaultEventExecutorGroup, new XXXhandler());</span><br><span class="line">      &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>每一个调用者通过TCP连接和新的BC服的接入层连接并发起异步请求，单条TCP连接来的请求QPS在200左右（这个调用量事先我们并不知道，只能从监控中看到调用dubbo的量）。</p>
+<p>(题外话：如果你对Netty非常熟的话，看到这里应该就知道问题出在哪里了)</p>
+<h3 id="问题现象"><a href="#问题现象" class="headerlink" title="问题现象"></a>问题现象</h3><p>在代码上线之前的灰度测试阶段发现了接入服务的内存不断增长不释放的问题，在进行了heap dump之后，发现DefaultEventExecutor里面的taskQueue队列非常长，并且随着时间一直增长，导致内存占用不释放。</p>
+<h3 id="问题排查"><a href="#问题排查" class="headerlink" title="问题排查"></a>问题排查</h3><p>根据出现的问题现象有两种可能：</p>
+<ol>
+<li><p>队列消费了，但是队列中的对象没有释放。代码中最后的 XXXhandler 是继承了SimpleChannelInboundHandler的子类，我们的代码是写在read0方法里面的，read方法里面会调用释放的代码，同时我们解码之后的对象也不是ReferenceCounted的对象，就是个POJO。所以排除了这个点。</p>
+</li>
+<li><p>队列没有消费，或者说消费速度跟不上生产速度。</p>
+</li>
+</ol>
+<p>我仔细看了netty初始化pipline的代码之后，发现在有线程池的情况下会调用线程池的next方法返回的线程/线程池绑定到对应的channel上（在addLast方法的newContext里面 ），所有从该channel都由绑定的线程/线程池处理。对于我使用的DefaultEventExecutorGroup来说，他的next按照RoundRobin的顺序从池内返回一个线程，也就是DefaultEventExecutor（它是继承的SingleThreadEventExecutor，也就是一个单线程的执行器）而且堵着的队列也就是它自带的taskQueue。</p>
+<p>由于我们的单个生产者生产速度在200qps左右，而dubbo调用的平均时长在10ms左右，最长可达500ms，也就是说单个线程消费qps最多也就100，这就是为什么队列会越来越长的原因。</p>
+<h3 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h3><p>知道了问题的原因，解决起来就容易了，换一个next方法返回一个多线程线程池的ExecutorGroup就可以了，看了一下ExecutorGroup的子类，同时查了一下stackoverflow，最后换成了UnorderedThreadPoolEventExecutor这个ExecutorGroup，它的next方法返回它自身，同时内部也是使用的我们熟悉的标准Java线程池。代码改完之后重新发布，问题解决，并且调用后端的QPS也是正常水平。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>那么Netty的线程池要怎么选？</p>
+<p>如果你的应用是很多客户端接入的话，每个客户端的QPS不高的情况下，请使用DefaultEventExecutorGroup，他可以保证单个客户端的消息顺序。</p>
+<p>如果你的应用是少量客户端接入，每个客户端又会大量发送消息的话，且对单个客户端的消息顺序没有要求的话，请使用UnorderedThreadPoolEventExecutor。这种情况下如果对消息顺序有需求，建议做成业务保证最终一致性。比如在解码阶段带上解码的时间戳，后面的业务处理新戳可以覆盖老戳，老的不能覆盖新的。或者根据你的业务需求在业务上进行处理。</p>
+<p>如果你的应用是很多客户端接入，同时每个客户端又是大量请求，同时又对单个客户端消息顺序有要求的话（比如多人实时游戏），建议使用DefaultEventExecutorGroup的同时缩短后端调用的时长，比如后端数据全部内存化，走异步刷盘策略，然后同机房调用。</p>
+<p>或者使用全异步请求，这样线程池都不需要了哈哈。</p>
+<h3 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h3><p>这几个月博客没更新，全在忙这个项目。吐槽一下，原来的lua代码到处都是随缘逻辑，改的真是吐血…</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/netty/" rel="tag"># netty</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/08/03/use_local_jar_in_maven_project/" rel="next" title="在Maven工程中引用本地jar包">
+                <i class="fa fa-chevron-left"></i> 在Maven工程中引用本地jar包
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+      <div id="sidebar-dimmer"></div>
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">LongYuBo</p>
+              <p class="site-description motion-element" itemprop="description">Backend Developer</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">20</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">20</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+
+          
+          
+
+          
+          
+            <div class="links-of-blogroll motion-element links-of-blogroll-block">
+              <div class="links-of-blogroll-title">
+                <i class="fa  fa-fw fa-link"></i>
+                友情链接
+              </div>
+              <ul class="links-of-blogroll-list">
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://laily.net" title="Laily's Blog" target="_blank">Laily's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://yl.frontjs.cc" title="YL's Blog" target="_blank">YL's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://www.cnblogs.com/aheizi" title="aheizi's Blog" target="_blank">aheizi's Blog</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="https://rust.longyb.com" title="Rust程序设计语言第二版" target="_blank">Rust程序设计语言第二版</a>
+                  </li>
+                
+                  <li class="links-of-blogroll-item">
+                    <a href="http://www.piz168.com" title="Piz168" target="_blank">Piz168</a>
+                  </li>
+                
+              </ul>
+            </div>
+          
+
+          
+            
+          
+          
+        </div>
+      </section>
+
+  
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#记一次netty线程池使用错误导致的内存泄漏"><span class="nav-number">1.</span> <span class="nav-text">记一次netty线程池使用错误导致的内存泄漏</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题现象"><span class="nav-number">1.2.</span> <span class="nav-text">问题现象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题排查"><span class="nav-number">1.3.</span> <span class="nav-text">问题排查</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决办法"><span class="nav-number">1.4.</span> <span class="nav-text">解决办法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">1.5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#后记"><span class="nav-number">1.6.</span> <span class="nav-text">后记</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+
+        <!--     <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active"  style="margin-bottom:10px;margin-top:10px">
+          <div class="post-toc post-toc-content">
+           <a href="https://s.click.taobao.com/0hCmP8w" target="_blank" ><img width="300px" src="https://sinacloud.net/longyb-myblog/tb/tb2019_618_blog_new.jpg" alt="领取618红包"></img> </a>
+          </div>
+        </section> 
+        -->
+
+       <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active"  style="margin-bottom:10px;margin-top:10px">
+          <div class="post-toc post-toc-content">
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+                <!-- sidebar -->
+                <ins class="adsbygoogle"
+                    style="display:inline-block;width:220px;height:440px"
+                    data-ad-client="ca-pub-1152468994097923"
+                    data-ad-slot="6750269354"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+          </div>
+       </section>
+
+    </div>
+ 
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">LongYuBo</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动 v3.7.1</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a class="theme-link" target="_blank" href="https://theme-next.org">NexT.Gemini</a> v6.4.2</div>
+
+
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv" title="总访客量">
+      <i class="fa fa-user"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+    </span>
+  
+
+  
+    <span class="site-pv" title="总访问量">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+    </span>
+  
+</div>
+
+
+
+
+
+
+
+
+
+  <div style="display: none;">
+    <script src="//s95.cnzz.com/z_stat.php?id=1274971050&web_id=1274971050" language="JavaScript"></script>
+  </div>
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/velocity/1.3.1/velocity.min.js"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="//cdn.bootcss.com/velocity/1.3.1/velocity.ui.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.2"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.2"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=6.4.2"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=6.4.2"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.2"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.2"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.2"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
