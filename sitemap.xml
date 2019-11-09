@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2019/11/09/netty_choose_executorgroup/</loc>
+    
+    <lastmod>2019-11-09T13:33:55.298Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.longyb.com/2019/06/05/cassandra_lcs_twcs/</loc>
+    
+    <lastmod>2019-11-09T11:38:07.344Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/08/03/use_local_jar_in_maven_project/</loc>
     
     <lastmod>2019-08-03T08:54:13.993Z</lastmod>
@@ -68,13 +82,6 @@
     <loc>https://blog.longyb.com/2019/06/03/cassandra_compaction_intro/</loc>
     
     <lastmod>2019-06-05T13:40:07.434Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.longyb.com/2019/06/05/cassandra_lcs_twcs/</loc>
-    
-    <lastmod>2019-06-05T13:34:09.312Z</lastmod>
     
   </url>
   
