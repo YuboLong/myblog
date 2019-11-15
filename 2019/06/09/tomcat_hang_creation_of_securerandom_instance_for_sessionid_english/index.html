@@ -118,7 +118,7 @@
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
 <meta property="og:description" content="The backgroundIn our production environment, Tomcat starts very slow, we found this line below in tomcat’s log:[2019-05-17 14:06:20] [localhost-startStop-1] INFO oacutil.SessionIdGenerator [T :] Creat">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-07-07T03:40:01.233Z">
+<meta property="og:updated_time" content="2019-11-15T14:37:48.315Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Solve Tomcat hung at start Creation of SecureRandom instance">
 <meta name="twitter:description" content="The backgroundIn our production environment, Tomcat starts very slow, we found this line below in tomcat’s log:[2019-05-17 14:06:20] [localhost-startStop-1] INFO oacutil.SessionIdGenerator [T :] Creat">
@@ -362,7 +362,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2019-07-07 11:40:01" itemprop="dateModified" datetime="2019-07-07T11:40:01+08:00">2019-07-07</time>
+                <time title="修改时间：2019-11-15 22:37:48" itemprop="dateModified" datetime="2019-11-15T22:37:48+08:00">2019-11-15</time>
               
             
           </span>
@@ -427,8 +427,8 @@
 </script>
         <h3 id="The-background"><a href="#The-background" class="headerlink" title="The background"></a>The background</h3><p>In our production environment, Tomcat starts very slow, we found this line below in tomcat’s log:<br>[2019-05-17 14:06:20] [localhost-startStop-1] INFO oacutil.SessionIdGenerator [T :] Creation of SecureRandom instance for session ID generation using [SHA1PRNG] took [213,586] milliseconds.</p>
 <h3 id="What-Happened"><a href="#What-Happened" class="headerlink" title="What Happened?"></a>What Happened?</h3><p>we did some google and found out The Java’s SecureRandom is reading operating system’s /dev/random synchronously<br>(specifically is reading the configuration located at JAVA_HOME/jre/lib/security/java.security . In that file, it has a [securerandom.source=file:/dev/random] configuration item)<br>the value in the entropy pool is not enough, so it hangs in reading /dev/random which causing the slow startup</p>
-<h3 id="Solution"><a href="#Solution" class="headerlink" title="Solution"></a>Solution</h3><p>1.According to the official document of tomcat (<a href="https://wiki.apache.org/tomcat/HowTo/FasterStartUp)" target="_blank" rel="noopener">https://wiki.apache.org/tomcat/HowTo/FasterStartUp)</a>,<br>add -Djava.security.egd=file:/dev/./urandom when jvm starts</p>
-<p>2.Or change the configuration [securerandom.source] in JAVA_HOME/jre/lib/security/java.security to [securerandom.source=file:/dev/random]</p>
+<h3 id="Solution"><a href="#Solution" class="headerlink" title="Solution"></a>Solution</h3><p>According to the official document of tomcat (<a href="https://wiki.apache.org/tomcat/HowTo/FasterStartUp)" target="_blank" rel="noopener">https://wiki.apache.org/tomcat/HowTo/FasterStartUp)</a>,<br>add -Djava.security.egd=file:/dev/./urandom when jvm starts</p>
+<p>Or Change the configuration [securerandom.source] in JAVA_HOME/jre/lib/security/java.security to [securerandom.source=file:/dev/./urandom]</p>
 <p>choose one of the above methods will solve the problem.</p>
 <h3 id="What-the-hell-is-urandom"><a href="#What-the-hell-is-urandom" class="headerlink" title="What the hell is ./urandom ?"></a>What the hell is ./urandom ?</h3><p>The solution showing above is not very straight forward. Why is it written as file:/dev/./urandom instead of file:/dev/urandom? when changed to file:/dev/urandom, the jvm still read file:/dev/random.</p>
 <p>I found this is a bug in jvm .</p>
@@ -437,7 +437,7 @@
 <p>If java.security.egd or securerandom.source point to “file:/dev/random” or “file:/dev/urandom”, we will use NativeSeedGenerator, which calls super() which calls SeedGenerator.URLSeedGenerator(/dev/random).<br>(A nested class within SeedGenerator.) The only things that changed in this bug was that urandom will also trigger use of this code path. </p>
 </blockquote>
 <p>so people use this NOT WELL DOCUMENTED workaround with file:/dev/./urandom .</p>
-<p>But this problem does not exist in the development environment, why does only exist in production environment?</p>
+<p>But this problem does not exist in the development environment. Why does it exist in production environment?</p>
 <p>our development environment is centOS while online environment is debian, direct cat /dev/random can find that the development environment can display several screens of random numbers immediately, while the online environment has less than 20 characters. In the page of “/dev/random” in wikipedia:<a href="https://en.wikipedia.org/wiki//dev/random" target="_blank" rel="noopener">/dev/random</a>.</p>
 <p>Here is a section in the page:</p>
 <blockquote>
