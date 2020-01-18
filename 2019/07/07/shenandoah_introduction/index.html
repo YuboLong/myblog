@@ -110,21 +110,21 @@
 
 
 
-  <meta name="description" content="JDK 12 Shenandoah GC简介本文根据Shenandoah的原始Paper整理而成。 Shenandoah作为一个实验性GC在JDK8时代就有了，在JDK12正式成为一个可选的垃圾回收器。 在JDK11有一个类似功能的ZGC被引入，相关介绍见JDK 11 ZGC简介 背景带有Compact功能的GC有着更小的占用空间以及更好的缓存局部化，，但是stop the worst的compa">
+  <meta name="description" content="JDK 12 Shenandoah GC简介本文根据Shenandoah的原始Paper整理而成。 Shenandoah作为一个实验性GC在JDK8时代就有了，在JDK12正式成为一个可选的垃圾回收器。 在JDK11有一个类似功能的ZGC被引入，相关介绍见JDK 11 ZGC简介 背景带有Compact功能的GC有着更小的占用空间以及更好的缓存局部化，，但是stop the world的compa">
 <meta name="keywords" content="gc,jvm,java,jdk12">
 <meta property="og:type" content="article">
 <meta property="og:title" content="JDK 12 Shenandoah简介">
 <meta property="og:url" content="https://blog.longyb.com/2019/07/07/shenandoah_introduction/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
-<meta property="og:description" content="JDK 12 Shenandoah GC简介本文根据Shenandoah的原始Paper整理而成。 Shenandoah作为一个实验性GC在JDK8时代就有了，在JDK12正式成为一个可选的垃圾回收器。 在JDK11有一个类似功能的ZGC被引入，相关介绍见JDK 11 ZGC简介 背景带有Compact功能的GC有着更小的占用空间以及更好的缓存局部化，，但是stop the worst的compa">
+<meta property="og:description" content="JDK 12 Shenandoah GC简介本文根据Shenandoah的原始Paper整理而成。 Shenandoah作为一个实验性GC在JDK8时代就有了，在JDK12正式成为一个可选的垃圾回收器。 在JDK11有一个类似功能的ZGC被引入，相关介绍见JDK 11 ZGC简介 背景带有Compact功能的GC有着更小的占用空间以及更好的缓存局部化，，但是stop the world的compa">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://sinacloud.net/longyb-myblog/shenandoah_layout.png">
 <meta property="og:image" content="https://sinacloud.net/longyb-myblog/shenandoah_heap_layout.png">
 <meta property="og:image" content="https://sinacloud.net/longyb-myblog/shenandoah_phases.png">
-<meta property="og:updated_time" content="2019-07-07T03:36:36.297Z">
+<meta property="og:updated_time" content="2020-01-18T08:09:52.951Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="JDK 12 Shenandoah简介">
-<meta name="twitter:description" content="JDK 12 Shenandoah GC简介本文根据Shenandoah的原始Paper整理而成。 Shenandoah作为一个实验性GC在JDK8时代就有了，在JDK12正式成为一个可选的垃圾回收器。 在JDK11有一个类似功能的ZGC被引入，相关介绍见JDK 11 ZGC简介 背景带有Compact功能的GC有着更小的占用空间以及更好的缓存局部化，，但是stop the worst的compa">
+<meta name="twitter:description" content="JDK 12 Shenandoah GC简介本文根据Shenandoah的原始Paper整理而成。 Shenandoah作为一个实验性GC在JDK8时代就有了，在JDK12正式成为一个可选的垃圾回收器。 在JDK11有一个类似功能的ZGC被引入，相关介绍见JDK 11 ZGC简介 背景带有Compact功能的GC有着更小的占用空间以及更好的缓存局部化，，但是stop the world的compa">
 <meta name="twitter:image" content="https://sinacloud.net/longyb-myblog/shenandoah_layout.png">
 
 
@@ -349,12 +349,24 @@
                 
               
 
-              <time title="创建时间：2019-07-07 10:06:00 / 修改时间：11:36:36" itemprop="dateCreated datePublished" datetime="2019-07-07T10:06:00+08:00">2019-07-07</time>
+              <time title="创建时间：2019-07-07 10:06:00" itemprop="dateCreated datePublished" datetime="2019-07-07T10:06:00+08:00">2019-07-07</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2020-01-18 16:09:52" itemprop="dateModified" datetime="2020-01-18T16:09:52+08:00">2020-01-18</time>
               
             
           </span>
@@ -420,7 +432,7 @@
         <h2 id="JDK-12-Shenandoah-GC简介"><a href="#JDK-12-Shenandoah-GC简介" class="headerlink" title="JDK 12 Shenandoah GC简介"></a>JDK 12 Shenandoah GC简介</h2><p>本文根据Shenandoah的原始<a href="https://www.researchgate.net/profile/Christine_Flood/publication/306112816_Shenandoah_An_open-source_concurrent_compacting_garbage_collector_for_OpenJDK/links/5a0de9230f7e9b7d4dba54f9/Shenandoah-An-open-source-concurrent-compacting-garbage-collector-for-OpenJDK.pdf?origin=publication_detail" target="_blank" rel="noopener">Paper</a>整理而成。</p>
 <p>Shenandoah作为一个实验性GC在JDK8时代就有了，在JDK12正式成为一个可选的垃圾回收器。</p>
 <p>在JDK11有一个类似功能的ZGC被引入，相关介绍见<a href="/2018/10/04/Zgc_Introduction/">JDK 11 ZGC简介</a></p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>带有Compact功能的GC有着更小的占用空间以及更好的缓存局部化，，但是stop the worst的compact对于200GB的大队来说，无法达到10~500毫秒的暂停时间。，所以就需要一个并发的gc，应用程序在运行的同时也能进行compact堆的工作，于是就有了Shenandoah gc，它是一个可以并发contact堆的GC算法，在Shenandoah以前的g1和cms，如果要compact堆的话是stop the world型的，G1通过分区来减少stop the world时间，cms默认不compact，如果打开了compact会stop the world compact。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>带有Compact功能的GC有着更小的占用空间以及更好的缓存局部化，，但是stop the world的compact对于200GB级别的大堆来说，无法达到10~500毫秒的暂停时间。所以就需要一个并发的gc，应用程序在运行的同时也能进行compact堆的工作，于是就有了Shenandoah GC，它是一个可以并发contact堆的GC算法，在Shenandoah以前的g1和cms，如果要compact堆的话是要Stop the world的，G1通过分区来减少stop the world时间，cms默认不compact，如果打开了compact会进行stop the world型的compact。</p>
 <h2 id="Shenandoah-简介"><a href="#Shenandoah-简介" class="headerlink" title="Shenandoah 简介"></a>Shenandoah 简介</h2><h3 id="基本想法"><a href="#基本想法" class="headerlink" title="基本想法"></a>基本想法</h3><p>在对象头上加一个forward pointer，在运行时通过cas来更新这个forward pointer到拷贝的对象的新地址，在下一轮mark的时候，再去更新引用到这个对象的指针。在这之前，通过这个forward pointer，把老对象的访问转移到新对象上。</p>
 <h3 id="对象布局"><a href="#对象布局" class="headerlink" title="对象布局"></a>对象布局</h3><p>如下图所示，Shenandoah在每一个对象头上加了一个forward pointer，如下图中的Indirection pointer。<br><img src="https://sinacloud.net/longyb-myblog/shenandoah_layout.png" height="50%" width="50%" alt="shenandoah_object_layout"></p>
 <h3 id="堆布局"><a href="#堆布局" class="headerlink" title="堆布局"></a>堆布局</h3><p>类似g1，堆也被分成了相同大小的region。在gc时，任何region都可以成为回收对象，回收时回收那些垃圾较多的region（虽然分了region，但是没有分代）。如图2所示。<br><img src="https://sinacloud.net/longyb-myblog/shenandoah_heap_layout.png" alt="shanandoah_heap_layout"></p>
@@ -430,12 +442,11 @@
 <li>最终标记：Stop the world,重新扫描根集合，copy根集合到新的region，更新根集合让他们指向新的对象。初始化并发compact，free掉上一次清理过的region。</li>
 <li>并发compact：把活着的对象拷贝到新的region。<br><img src="https://sinacloud.net/longyb-myblog/shenandoah_phases.png" height="80%" width="80%" alt="shanandoah_gc_phases"></li>
 </ol>
-<p><img src="" alt=""></p>
 <h4 id="并发标记"><a href="#并发标记" class="headerlink" title="并发标记"></a>并发标记</h4><p>使用一个SATB（SNAPSHOT AT BEGINNING）算法————任何在标记的开始阶段活着的，或者被新引用到的对象都被认为是活着的对象。<br>维护SATB需要一个write barrier，如果应用程序引用了一个新对象，这个新对象必须仍然能够被追踪到。具体做法是write barrier把新引用放到一个会被mark线程扫描的队列里。<br>每个mark线程会持有一个Threadlocal的标识region有多少live data的数据。在mark的结束阶段汇总这些数据来决定对哪些region做compact。</p>
-<h4 id="回收集的选择"><a href="#回收集的选择" class="headerlink" title="回收集的选择"></a>回收集的选择</h4><p>选择或者对象较少的region（也就是垃圾较多的region）</p>
+<h4 id="回收集的选择"><a href="#回收集的选择" class="headerlink" title="回收集的选择"></a>回收集的选择</h4><p>选择活着对象较少的region（也就是垃圾较多的region）</p>
 <h4 id="并发Compaction"><a href="#并发Compaction" class="headerlink" title="并发Compaction"></a>并发Compaction</h4><p>当回收集选好了之后，就要开始Compact阶段。GC线程使用一个猜测性的协议来完成compact。</p>
 <ul>
-<li>先猜测性的吧对象拷贝到Threadlocal allocation buffer中。</li>
+<li>先猜测性的把对象拷贝到Threadlocal allocation buffer中。</li>
 <li>然后CAS老对象的forward pointer到新对象的地址上。</li>
 <li>CAS如果失败，说明有其他线程也做了同样的事情，这时候GC线程回滚掉之前COPY的对象，使用老对象上的其他线程留下的forward pointer。</li>
 </ul>
@@ -574,7 +585,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">20</span>
+                    <span class="site-state-item-count">21</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -629,7 +640,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">20</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">22</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
@@ -739,7 +754,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>

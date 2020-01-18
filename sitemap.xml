@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2020/01/18/mylive/</loc>
+    
+    <lastmod>2020-01-18T08:39:49.070Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.longyb.com/2019/07/07/shenandoah_introduction/</loc>
+    
+    <lastmod>2020-01-18T08:09:52.951Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/06/09/tomcat_hang_creation_of_securerandom_instance_for_sessionid_english/</loc>
     
     <lastmod>2019-11-15T14:37:48.315Z</lastmod>
@@ -47,13 +61,6 @@
     <loc>https://blog.longyb.com/2018/10/04/Zgc_Introduction/</loc>
     
     <lastmod>2019-07-07T03:39:09.888Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.longyb.com/2019/07/07/shenandoah_introduction/</loc>
-    
-    <lastmod>2019-07-07T03:36:36.297Z</lastmod>
     
   </url>
   
