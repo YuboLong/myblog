@@ -120,7 +120,7 @@
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="https://sinacloud.net/longyb-myblog/old_bc_server.png">
 <meta property="og:image" content="https://sinacloud.net/longyb-myblog/new_bc_server.png">
-<meta property="og:updated_time" content="2019-11-09T13:33:55.298Z">
+<meta property="og:updated_time" content="2020-05-03T01:55:04.321Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="记一次netty线程池使用错误导致的内存泄漏">
 <meta name="twitter:description" content="记一次netty线程池使用错误导致的内存泄漏背景该项目是一个重构项目，原来的工程是一个LUA+C++的项目，叫做BC服，项目转到我们组，由于我们组没人有相关经验，决定使用JAVA重写。原始项目整体结构如下：  我们重写改造后的结构如下：  我们的接入服务中的网络框架选用的是netty，在channel初始化的最后放了一个线程池，在线程池里面的做同步的远程dubbo调用。代码如下 123456789">
@@ -348,12 +348,24 @@
                 
               
 
-              <time title="创建时间：2019-11-09 20:05:00 / 修改时间：21:33:55" itemprop="dateCreated datePublished" datetime="2019-11-09T20:05:00+08:00">2019-11-09</time>
+              <time title="创建时间：2019-11-09 20:05:00" itemprop="dateCreated datePublished" datetime="2019-11-09T20:05:00+08:00">2019-11-09</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2020-05-03 09:55:04" itemprop="dateModified" datetime="2020-05-03T09:55:04+08:00">2020-05-03</time>
               
             
           </span>
@@ -437,7 +449,7 @@
 <h3 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h3><p>知道了问题的原因，解决起来就容易了，换一个next方法返回一个多线程线程池的ExecutorGroup就可以了，看了一下ExecutorGroup的子类，同时查了一下stackoverflow，最后换成了UnorderedThreadPoolEventExecutor这个ExecutorGroup，它的next方法返回它自身，同时内部也是使用的我们熟悉的标准Java线程池。代码改完之后重新发布，问题解决，并且调用后端的QPS也是正常水平。</p>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>那么Netty的线程池要怎么选？</p>
 <p>如果你的应用是很多客户端接入的话，每个客户端的QPS不高的情况下，请使用DefaultEventExecutorGroup，他可以保证单个客户端的消息顺序。</p>
-<p>如果你的应用是少量客户端接入，每个客户端又会大量发送消息的话，且对单个客户端的消息顺序没有要求的话，请使用UnorderedThreadPoolEventExecutor。这种情况下如果对消息顺序有需求，建议做成业务保证最终一致性。比如在解码阶段带上解码的时间戳，后面的业务处理新戳可以覆盖老戳，老的不能覆盖新的。或者根据你的业务需求在业务上进行处理。</p>
+<p>如果你的应用是少量客户端接入，每个客户端又会大量发送消息的话，且对单个客户端的消息顺序没有要求的话，请使用UnorderedThreadPoolEventExecutor,或者在pipline的最后处理器里面自己写代码把业务放到一个线程池里跑。这种情况下如果对消息顺序有需求，建议做成业务保证最终一致性。比如在解码阶段带上解码的时间戳，后面的业务处理新戳可以覆盖老戳，老的不能覆盖新的。或者根据你的业务需求在业务上进行处理。</p>
 <p>如果你的应用是很多客户端接入，同时每个客户端又是大量请求，同时又对单个客户端消息顺序有要求的话（比如多人实时游戏），建议使用DefaultEventExecutorGroup的同时缩短后端调用的时长，比如后端数据全部内存化，走异步刷盘策略，然后同机房调用。</p>
 <p>或者使用全异步请求，这样线程池都不需要了哈哈。</p>
 <h3 id="后记"><a href="#后记" class="headerlink" title="后记"></a>后记</h3><p>这几个月博客没更新，全在忙这个项目。吐槽一下，原来的lua代码到处都是随缘逻辑，改的真是吐血…</p>
@@ -563,7 +575,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">21</span>
+                    <span class="site-state-item-count">22</span>
                     <span class="site-state-item-name">日志</span>
                   </a>
                 </div>
@@ -622,7 +634,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">22</span>
+                      
+                    
+                    <span class="site-state-item-count">23</span>
                     <span class="site-state-item-name">标签</span>
                   </a>
                 </div>
