@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.longyb.com/2021/02/13/database_migration/</loc>
+    
+    <lastmod>2021-02-13T07:42:57.223Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.longyb.com/2019/01/23/transaction_mq/</loc>
+    
+    <lastmod>2021-02-13T07:38:19.355Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.longyb.com/2019/11/09/netty_choose_executorgroup/</loc>
     
     <lastmod>2020-05-03T01:55:04.321Z</lastmod>
@@ -110,13 +124,6 @@
     <loc>https://blog.longyb.com/2019/02/18/cassandra_setup/</loc>
     
     <lastmod>2019-02-18T15:41:01.511Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.longyb.com/2019/01/23/transaction_mq/</loc>
-    
-    <lastmod>2019-01-23T15:28:02.310Z</lastmod>
     
   </url>
   
