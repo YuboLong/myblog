@@ -53,6 +53,32 @@
 
 
 
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
 
 
 
@@ -110,18 +136,18 @@
 
 
 
-  <meta name="description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
+  <meta name="description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：1[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
 <meta name="keywords" content="java,Tomcat">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Tomcat启动Creation of SecureRandom instance卡住解决">
 <meta property="og:url" content="https://blog.longyb.com/2019/05/17/tomcat_hang_creation_of_securerandom_instance_for_sessionid/index.html">
 <meta property="og:site_name" content="LongYuBo&#39;s Blog">
-<meta property="og:description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
+<meta property="og:description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：1[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
 <meta property="og:locale" content="zh-CN">
-<meta property="og:updated_time" content="2019-07-07T03:40:09.212Z">
+<meta property="og:updated_time" content="2021-02-14T05:01:24.319Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Tomcat启动Creation of SecureRandom instance卡住解决">
-<meta name="twitter:description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
+<meta name="twitter:description" content="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住背景起因是线上Tomcat的启动缓慢，看到日志里面有一行：1[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator">
 
 
 
@@ -362,7 +388,7 @@
                 
                   <span class="post-meta-item-text">更新于</span>
                 
-                <time title="修改时间：2019-07-07 11:40:09" itemprop="dateModified" datetime="2019-07-07T11:40:09+08:00">2019-07-07</time>
+                <time title="修改时间：2021-02-14 13:01:24" itemprop="dateModified" datetime="2021-02-14T13:01:24+08:00">2021-02-14</time>
               
             
           </span>
@@ -425,11 +451,16 @@
 <script>
      (adsbygoogle = window.adsbygoogle || []).push({});
 </script>
-        <h2 id="Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住"><a href="#Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住" class="headerlink" title="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住"></a>Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住</h2><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>起因是线上Tomcat的启动缓慢，看到日志里面有一行：<br>[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator [T:] Creation of SecureRandom instance for session ID generation using [SHA1PRNG] took [213,586] milliseconds.</p>
+        <h2 id="Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住"><a href="#Tomcat启动因为-Creation-of-SecureRandom-instance-for-session-ID-generation-using-SHA1PRNG-卡住" class="headerlink" title="Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住"></a>Tomcat启动因为 Creation of SecureRandom instance for session ID generation using [SHA1PRNG] 卡住</h2><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>起因是线上Tomcat的启动缓慢，看到日志里面有一行：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[2019-05-17 14:06:20] [localhost-startStop-1] INFO o.a.c.util.SessionIdGenerator [T:] Creation of SecureRandom instance for session ID generation using [SHA1PRNG] took [213,586] milliseconds.</span><br></pre></td></tr></table></figure></p>
 <h3 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h3><p>简单google了一下，是Java的SecureRandom是<b><font color="red">同步</font></b>读的操作系统的/dev/random<br>（具体的这个配置是在JAVA_HOME/jre/lib/security/java.security这个文件里面的securerandom.source=file:/dev/random 这个配置项）<br>由于entropy pool(熵池)里面的值不够，所以卡住在读/dev/random上了，造成了启动缓慢</p>
-<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><pre><code>1. 根据tomcat官方文档给出的方式（https://wiki.apache.org/tomcat/HowTo/FasterStartUp），在jvm启动的时候加入-Djava.security.egd=file:/dev/./urandom即可
-2. 或者把JAVA_HOME/jre/lib/security/java.security里面的securerandom.source的值改为file:/dev/./urandom也可以
-</code></pre><p>上述方法二选一即可。</p>
+<h3 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h3><ol>
+<li>根据tomcat<a href="https://cwiki.apache.org/confluence/display/TOMCAT/HowTo+FasterStartUp#HowToFasterStartUp-EntropySource" target="_blank" rel="noopener">官方文档给出的方式</a>，在jvm启动的时候加入</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-Djava.security.egd=file:/dev/./urandom</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>或者把JAVA_HOME/jre/lib/security/java.security里面的securerandom.source的值改为file:/dev/./urandom也可以</li>
+</ol>
+<p>上述方法二选一即可。</p>
 <h3 id="urandom是什么鬼"><a href="#urandom是什么鬼" class="headerlink" title="./urandom是什么鬼"></a>./urandom是什么鬼</h3><p>但是这里有个很奇怪的地方，为什么写法是file:/dev/./urandom，而不是file:/dev/urandom，我搜索了一下，换成file:/dev/urandom是不会生效的，读的还是file:/dev/random。这是jvm的一个bug，相关的记录</p>
 <p><a href="https://bugs.java.com/bugdatabase/view_bug.do?bug_id=4705093" target="_blank" rel="noopener">4705093</a><br><a href="https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6202721" target="_blank" rel="noopener">6202721</a> </p>
 <pre><code>If java.security.egd or securerandom.source point to &quot;file:/dev/random&quot; or &quot;file:/dev/urandom&quot;, we will use NativeSeedGenerator, which calls super() which calls SeedGenerator.URLSeedGenerator(/dev/random). 
